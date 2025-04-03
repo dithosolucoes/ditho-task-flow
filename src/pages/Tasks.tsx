@@ -21,13 +21,15 @@ const Tasks = () => {
     useTasksQuery, 
     useAddTaskMutation, 
     useToggleTaskCompletionMutation,
-    useDeleteTaskMutation 
+    useDeleteTaskMutation,
+    useUpdateTaskMutation 
   } = useTasks();
   
   const tasksQuery = useTasksQuery();
   const toggleTaskMutation = useToggleTaskCompletionMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
   const addTaskMutation = useAddTaskMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
 
   const handleTaskComplete = (id: string, completed: boolean) => {
     toggleTaskMutation.mutate({ id, completed });
@@ -39,6 +41,10 @@ const Tasks = () => {
 
   const handleAddTask = (task: Omit<Task, "id" | "createdAt">) => {
     addTaskMutation.mutate(task);
+  };
+
+  const handleUpdateTask = (task: Task) => {
+    updateTaskMutation.mutate(task);
   };
 
   const handleDeleteTask = (id: string) => {
