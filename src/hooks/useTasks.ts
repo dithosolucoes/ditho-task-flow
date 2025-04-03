@@ -8,25 +8,28 @@ import { useToast } from "./use-toast";
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user) {
       fetchTasks();
     } else {
       setTasks([]);
       setLoading(false);
     }
-  }, [user]);
+  }, [isAuthenticated, user]);
 
   const fetchTasks = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
       
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -121,11 +124,14 @@ export function useTasks() {
   };
 
   const deleteTask = async (id: string) => {
+    if (!user) return false;
+    
     try {
       const { error } = await supabase
         .from("tasks")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", user.id);
 
       if (error) {
         throw error;

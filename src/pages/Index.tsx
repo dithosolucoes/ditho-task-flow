@@ -5,16 +5,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "@/components/ui/logo";
 
 const Index = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
-    } else {
-      navigate("/login");
+    // Só redirecionamos quando o estado de autenticação for carregado
+    if (!isLoading) {
+      if (isAuthenticated) {
+        navigate("/dashboard");
+      } else {
+        navigate("/login");
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-ditho-beige">
