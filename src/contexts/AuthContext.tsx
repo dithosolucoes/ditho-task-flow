@@ -21,33 +21,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("Setting up auth state listener");
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession?.user?.id);
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        } else {
+          setSession(null);
+          setUser(null);
+        }
         setLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Got existing session:", currentSession?.user?.id);
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setLoading(false);
-    });
+    const getInitialSession = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log("Got existing session:", currentSession?.user?.id);
+        
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        }
+      } catch (error) {
+        console.error("Error getting session:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    getInitialSession();
+
+    return () => {
+      console.log("Cleaning up auth subscription");
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -56,11 +78,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
+      console.log("Login successful, user:", data.user?.id);
+      
       toast({
         title: "Login realizado com sucesso",
         description: "Bem-vindo de volta!",
       });
+      
+      navigate("/dashboard");
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Erro ao fazer login",
         description: error.message || "Ocorreu um erro ao tentar fazer login.",
@@ -89,11 +116,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
+      console.log("Registration successful, user:", data.user?.id);
+      
       toast({
         title: "Conta criada com sucesso",
         description: "Você está agora autenticado no sistema.",
       });
+      
+      navigate("/dashboard");
     } catch (error: any) {
+      console.error("Registration error:", error);
       toast({
         title: "Erro ao criar conta",
         description: error.message || "Ocorreu um erro ao tentar criar sua conta.",
@@ -108,12 +140,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      setUser(null);
+      setSession(null);
+      
       toast({
         title: "Logout realizado com sucesso",
         description: "Você saiu da sua conta.",
       });
+      
+      navigate("/login");
     } catch (error: any) {
+      console.error("Logout error:", error);
       toast({
         title: "Erro ao fazer logout",
         description: error.message || "Ocorreu um erro ao tentar sair.",
@@ -129,7 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         user,
         session,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!session,
         login,
         register,
         logout,

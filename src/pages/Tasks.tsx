@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const navigate = useNavigate();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
   
   const { 
     useTasksQuery, 
@@ -26,28 +26,46 @@ const Tasks = () => {
   
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      console.log("Not authenticated, redirecting to login");
+      console.log("Not authenticated in Tasks component, user:", user?.id);
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, authLoading, user, navigate]);
 
+  // Only initialize queries when authenticated
   const tasksQuery = useTasksQuery();
   const toggleTaskMutation = useToggleTaskCompletionMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
   const addTaskMutation = useAddTaskMutation();
 
   const handleTaskComplete = (id: string, completed: boolean) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
     toggleTaskMutation.mutate({ id, completed });
   };
 
   const handleTaskClick = (task: Task) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
     setSelectedTask(task);
   };
 
   const handleAddTask = (task: Omit<Task, "id" | "createdAt">) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    
     addTaskMutation.mutate(task);
   };
 
   const handleDeleteTask = (id: string) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
     deleteTaskMutation.mutate(id);
   };
 
@@ -59,7 +77,7 @@ const Tasks = () => {
   if (!isAuthenticated && !authLoading) {
     return (
       <DashboardLayout title="Tarefas">
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Não autenticado</AlertTitle>
           <AlertDescription>

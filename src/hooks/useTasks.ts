@@ -17,7 +17,7 @@ export function useTasks() {
   // Função para buscar todas as tarefas do usuário
   const fetchTasks = async (): Promise<Task[]> => {
     if (!isAuthenticated || !user) {
-      console.log("User not authenticated in fetchTasks");
+      console.log("User not authenticated in fetchTasks, user ID:", user?.id);
       return [];
     }
 
@@ -49,7 +49,7 @@ export function useTasks() {
   // Função para buscar uma tarefa específica por ID
   const fetchTaskById = async (id: string): Promise<Task> => {
     if (!isAuthenticated || !user) {
-      console.log("User not authenticated in fetchTaskById");
+      console.log("User not authenticated in fetchTaskById, user ID:", user?.id);
       throw new Error("Usuário não autenticado");
     }
 
@@ -83,7 +83,7 @@ export function useTasks() {
   // Função para adicionar uma nova tarefa
   const addTask = async (task: Omit<Task, "id" | "createdAt">): Promise<Task> => {
     if (!isAuthenticated || !user) {
-      console.log("User not authenticated in addTask");
+      console.log("User not authenticated in addTask, user ID:", user?.id);
       throw new Error("Usuário não autenticado");
     }
     
@@ -97,6 +97,8 @@ export function useTasks() {
       category: task.category,
       user_id: user.id
     };
+
+    console.log("Task data being sent:", taskData);
 
     const { data, error } = await supabase
       .from("tasks")
@@ -128,7 +130,7 @@ export function useTasks() {
   // Função para atualizar uma tarefa existente
   const updateTask = async (task: Task): Promise<Task> => {
     if (!isAuthenticated || !user) {
-      console.log("User not authenticated in updateTask");
+      console.log("User not authenticated in updateTask, user ID:", user?.id);
       throw new Error("Usuário não autenticado");
     }
 
@@ -172,7 +174,7 @@ export function useTasks() {
   // Função para marcar uma tarefa como completa/incompleta
   const toggleTaskCompletion = async ({ id, completed }: { id: string; completed: boolean }): Promise<void> => {
     if (!isAuthenticated || !user) {
-      console.log("User not authenticated in toggleTaskCompletion");
+      console.log("User not authenticated in toggleTaskCompletion, user ID:", user?.id);
       throw new Error("Usuário não autenticado");
     }
 
@@ -190,7 +192,7 @@ export function useTasks() {
   // Função para excluir uma tarefa
   const deleteTask = async (id: string): Promise<void> => {
     if (!isAuthenticated || !user) {
-      console.log("User not authenticated in deleteTask");
+      console.log("User not authenticated in deleteTask, user ID:", user?.id);
       throw new Error("Usuário não autenticado");
     }
 
@@ -235,6 +237,7 @@ export function useTasks() {
         });
       },
       onError: (error: any) => {
+        console.error("Error in useAddTaskMutation:", error);
         toast({
           title: "Erro ao adicionar tarefa",
           description: error.message || "Ocorreu um erro ao adicionar a tarefa.",

@@ -37,7 +37,7 @@ export function TaskList({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
   const { useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation } = useTasks();
   const addTaskMutation = useAddTaskMutation();
@@ -51,6 +51,7 @@ export function TaskList({
 
   const handleAddTaskClick = () => {
     if (!isAuthenticated) {
+      console.log("Not authenticated in handleAddTaskClick, redirecting to login");
       navigate("/login");
       return;
     }
@@ -58,6 +59,11 @@ export function TaskList({
   };
 
   const handleTaskClick = (task: Task) => {
+    if (!isAuthenticated) {
+      console.log("Not authenticated in handleTaskClick, redirecting to login");
+      navigate("/login");
+      return;
+    }
     setSelectedTask(task);
     setIsTaskDetailsOpen(true);
     onTaskClick(task);
@@ -65,9 +71,12 @@ export function TaskList({
 
   const handleAddTaskSubmit = (task: Omit<Task, "id" | "createdAt">) => {
     if (!isAuthenticated) {
+      console.log("Not authenticated in handleAddTaskSubmit, redirecting to login");
       navigate("/login");
       return;
     }
+    
+    console.log("Submitting task with user:", user?.id);
     
     addTaskMutation.mutate(task, {
       onSuccess: () => {
@@ -78,6 +87,12 @@ export function TaskList({
   };
 
   const handleUpdateTask = (updatedTask: Task) => {
+    if (!isAuthenticated) {
+      console.log("Not authenticated in handleUpdateTask, redirecting to login");
+      navigate("/login");
+      return;
+    }
+    
     updateTaskMutation.mutate(updatedTask, {
       onSuccess: () => {
         setIsTaskDetailsOpen(false);
@@ -86,6 +101,12 @@ export function TaskList({
   };
 
   const handleDeleteTask = (id: string) => {
+    if (!isAuthenticated) {
+      console.log("Not authenticated in handleDeleteTask, redirecting to login");
+      navigate("/login");
+      return;
+    }
+    
     deleteTaskMutation.mutate(id, {
       onSuccess: () => {
         setIsTaskDetailsOpen(false);
