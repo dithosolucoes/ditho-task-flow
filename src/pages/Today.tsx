@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -20,8 +19,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// Definindo o tipo para os dados de mock para garantir consistência
+type MockTask = {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  dueDate?: Date;
+  priority: "low" | "medium" | "high";
+  createdAt: Date;
+  category: TaskCategory;
+};
+
 // Mock data - mesmas tarefas do Tasks.tsx com categorias adicionadas
-const mockTasks = [
+const mockTasks: MockTask[] = [
   {
     id: "1",
     title: "Finalizar relatório mensal",
@@ -84,8 +95,8 @@ const mockTasks = [
 ];
 
 const Today = () => {
-  const [tasks, setTasks] = useState(mockTasks);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [tasks, setTasks] = useState<MockTask[]>(mockTasks);
+  const [selectedTask, setSelectedTask] = useState<MockTask | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createCategory, setCreateCategory] = useState<TaskCategory>("new");
@@ -104,7 +115,7 @@ const Today = () => {
     });
   };
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = (task: MockTask) => {
     setSelectedTask(task);
     setIsDetailsOpen(true);
   };
@@ -117,7 +128,13 @@ const Today = () => {
   };
 
   const handleTaskCreate = (newTask: Task) => {
-    setTasks(prev => [...prev, newTask]);
+    // Convertendo de Task para MockTask
+    const mockTask: MockTask = {
+      ...newTask,
+      description: newTask.description || "", // Garantir que description seja uma string
+    };
+    
+    setTasks(prev => [...prev, mockTask]);
     setIsCreateDialogOpen(false);
     
     toast({
@@ -127,10 +144,16 @@ const Today = () => {
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {
+    // Convertendo de Task para MockTask
+    const mockTask: MockTask = {
+      ...updatedTask,
+      description: updatedTask.description || "", // Garantir que description seja uma string
+    };
+    
     setTasks(prev => 
-      prev.map(task => task.id === updatedTask.id ? updatedTask : task)
+      prev.map(task => task.id === mockTask.id ? mockTask : task)
     );
-    setSelectedTask(updatedTask);
+    setSelectedTask(mockTask);
     
     toast({
       title: "Tarefa atualizada",
