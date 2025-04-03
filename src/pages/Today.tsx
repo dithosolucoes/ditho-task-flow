@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,43 +19,104 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useTasks } from "@/hooks/useTasks";
-import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+
+// Definindo o tipo para os dados de mock para garantir consistência
+type MockTask = {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  dueDate?: Date;
+  priority: "low" | "medium" | "high";
+  createdAt: Date;
+  category: TaskCategory;
+};
+
+// Mock data - mesmas tarefas do Tasks.tsx com categorias adicionadas
+const mockTasks: MockTask[] = [
+  {
+    id: "1",
+    title: "Finalizar relatório mensal",
+    description: "Completar o relatório de vendas do mês de agosto",
+    completed: false,
+    dueDate: new Date(2023, 8, 28),
+    priority: "high" as const,
+    createdAt: new Date(2023, 8, 20),
+    category: "pending" as const, // Tarefa pendente (atrasada)
+  },
+  {
+    id: "2",
+    title: "Reunião com equipe de marketing",
+    description: "Discutir a nova campanha de lançamento do produto",
+    completed: false,
+    dueDate: new Date(2023, 8, 25),
+    priority: "medium" as const,
+    createdAt: new Date(2023, 8, 19),
+    category: "scheduled" as const, // Tarefa agendada para hoje
+  },
+  {
+    id: "3",
+    title: "Atualizar documentação",
+    description: "Revisar e atualizar a documentação do projeto",
+    completed: true,
+    dueDate: new Date(2023, 8, 22),
+    priority: "low" as const,
+    createdAt: new Date(2023, 8, 18),
+    category: "new" as const, // Nova tarefa para hoje
+  },
+  {
+    id: "4",
+    title: "Preparar apresentação",
+    description: "Criar slides para a apresentação na conferência",
+    completed: false,
+    dueDate: new Date(2023, 8, 30),
+    priority: "medium" as const,
+    createdAt: new Date(2023, 8, 21),
+    category: "pending" as const,
+  },
+  {
+    id: "5",
+    title: "Revisar código do projeto",
+    description: "Fazer code review das novas funcionalidades implementadas",
+    completed: false,
+    priority: "high" as const,
+    createdAt: new Date(2023, 8, 21),
+    category: "new" as const,
+  },
+  {
+    id: "6",
+    title: "Atualizar plugins",
+    description: "Atualizar plugins do site para as versões mais recentes",
+    completed: true,
+    dueDate: new Date(2023, 8, 15),
+    priority: "low" as const,
+    createdAt: new Date(2023, 8, 10),
+    category: "scheduled" as const,
+  },
+];
 
 const Today = () => {
-  const { user } = useAuth();
-  const { tasks, loading, updateTask, addTask, deleteTask } = useTasks();
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [tasks, setTasks] = useState<MockTask[]>(mockTasks);
+  const [selectedTask, setSelectedTask] = useState<MockTask | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createCategory, setCreateCategory] = useState<TaskCategory>("new");
   const { toast } = useToast();
 
-  // Redirect if not logged in
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-
   const handleTaskComplete = (id: string, completed: boolean) => {
-    const taskToUpdate = tasks.find(task => task.id === id);
-    if (taskToUpdate) {
-      const updatedTask = { ...taskToUpdate, completed };
-      updateTask(updatedTask);
-      
-      toast({
-        title: completed ? "Tarefa concluída!" : "Tarefa reaberta",
-        description: "Status da tarefa atualizado com sucesso.",
-      });
-
-      // Update selected task if it's the one being completed
-      if (selectedTask && selectedTask.id === id) {
-        setSelectedTask(updatedTask);
-      }
-    }
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id ? { ...task, completed } : task
+      )
+    );
+    
+    toast({
+      title: completed ? "Tarefa concluída!" : "Tarefa reaberta",
+      description: "Status da tarefa atualizado com sucesso.",
+    });
   };
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = (task: MockTask) => {
     setSelectedTask(task);
     setIsDetailsOpen(true);
   };
@@ -65,47 +128,50 @@ const Today = () => {
     setIsCreateDialogOpen(true);
   };
 
-  const handleTaskCreate = async (newTask: Task) => {
-    const createdTask = await addTask({
+  const handleTaskCreate = (newTask: Task) => {
+    // Convertendo de Task para MockTask
+    const mockTask: MockTask = {
       ...newTask,
-      category: newTask.category || createCategory
+      description: newTask.description || "", // Garantir que description seja uma string
+      category: newTask.category || createCategory, // Garantir que category seja definido
+    };
+    
+    setTasks(prev => [...prev, mockTask]);
+    setIsCreateDialogOpen(false);
+    
+    toast({
+      title: "Tarefa criada",
+      description: `"${newTask.title}" foi adicionada com sucesso.`,
     });
-    
-    if (createdTask) {
-      setIsCreateDialogOpen(false);
-      
-      toast({
-        title: "Tarefa criada",
-        description: `"${newTask.title}" foi adicionada com sucesso.`,
-      });
-    }
   };
 
-  const handleTaskUpdate = async (updatedTask: Task) => {
-    const success = await updateTask(updatedTask);
+  const handleTaskUpdate = (updatedTask: Task) => {
+    // Convertendo de Task para MockTask
+    const mockTask: MockTask = {
+      ...updatedTask,
+      description: updatedTask.description || "", // Garantir que description seja uma string
+      category: updatedTask.category || selectedTask?.category || "new", // Garantir que category seja definido
+    };
     
-    if (success) {
-      setSelectedTask(updatedTask);
-      
-      toast({
-        title: "Tarefa atualizada",
-        description: "As alterações foram salvas com sucesso.",
-      });
-    }
+    setTasks(prev => 
+      prev.map(task => task.id === mockTask.id ? mockTask : task)
+    );
+    setSelectedTask(mockTask);
+    
+    toast({
+      title: "Tarefa atualizada",
+      description: "As alterações foram salvas com sucesso.",
+    });
   };
 
-  const handleTaskDelete = async (id: string) => {
-    const success = await deleteTask(id);
+  const handleTaskDelete = (id: string) => {
+    setTasks(prev => prev.filter(task => task.id !== id));
     
-    if (success) {
-      setIsDetailsOpen(false);
-      
-      toast({
-        title: "Tarefa excluída",
-        description: "A tarefa foi removida permanentemente.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Tarefa excluída",
+      description: "A tarefa foi removida permanentemente.",
+      variant: "destructive",
+    });
   };
 
   // Filtrando as tarefas por categoria
@@ -128,9 +194,7 @@ const Today = () => {
               {format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR })}
             </h2>
             <p className="text-muted-foreground">
-              {loading ? 'Carregando tarefas...' : 
-                `${totalTasks} tarefas hoje: ${newTasks.length} novas, ${pendingTasks.length} pendentes, ${scheduledTasks.length} agendadas`
-              }
+              {totalTasks} tarefas hoje: {newTasks.length} novas, {pendingTasks.length} pendentes, {scheduledTasks.length} agendadas
             </p>
           </div>
           <Button onClick={() => handleAddTask()} className="bg-ditho-navy hover:bg-ditho-dark-navy">

@@ -23,24 +23,6 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
     navigate("/login");
   };
 
-  // Get the user's name from user_metadata or custom claims
-  const getUserName = () => {
-    if (!user) return 'Usuário';
-    
-    // Try to get name from user_metadata (set during signup)
-    if (user.user_metadata && user.user_metadata.name) {
-      return user.user_metadata.name.split(' ')[0];
-    }
-    
-    // Fallback to email
-    if (user.email) {
-      // Use the part before @ as a name
-      return user.email.split('@')[0];
-    }
-    
-    return 'Usuário';
-  };
-
   return (
     <div className="flex h-screen bg-ditho-light-beige">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -63,7 +45,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
             
             <div className="flex items-center">
               <div className="mr-4 text-sm text-gray-600">
-                Olá, {getUserName()}
+                Olá, {user?.name?.split(' ')[0] || 'Usuário'}
               </div>
               <Button 
                 variant="ghost" 

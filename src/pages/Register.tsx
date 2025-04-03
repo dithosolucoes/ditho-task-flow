@@ -13,7 +13,8 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const { register, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { register } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -39,6 +40,7 @@ const Register = () => {
     }
     
     try {
+      setIsLoading(true);
       await register(name, email, password);
       toast({
         title: "Conta criada com sucesso",
@@ -46,8 +48,13 @@ const Register = () => {
       });
       navigate("/dashboard");
     } catch (error) {
-      // Erros específicos já são tratados no AuthContext
-      console.error("Erro no formulário de registro:", error);
+      toast({
+        title: "Erro ao criar conta",
+        description: "Tente novamente mais tarde",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -78,7 +85,6 @@ const Register = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            disabled={isLoading}
           />
         </div>
         <div className="space-y-2">
@@ -90,7 +96,6 @@ const Register = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={isLoading}
           />
         </div>
         <div className="space-y-2">
@@ -102,8 +107,6 @@ const Register = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={isLoading}
-            minLength={6}
           />
         </div>
         <div className="space-y-2">
@@ -115,8 +118,6 @@ const Register = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
-            disabled={isLoading}
-            minLength={6}
           />
         </div>
         <Button 

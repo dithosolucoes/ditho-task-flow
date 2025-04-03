@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -28,6 +29,7 @@ const Login = () => {
     }
     
     try {
+      setIsLoading(true);
       await login(email, password);
       toast({
         title: "Login realizado com sucesso",
@@ -35,8 +37,13 @@ const Login = () => {
       });
       navigate("/dashboard");
     } catch (error) {
-      // Erros específicos já são tratados no AuthContext
-      console.error("Erro no formulário de login:", error);
+      toast({
+        title: "Erro ao fazer login",
+        description: "Verifique suas credenciais e tente novamente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -68,7 +75,6 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={isLoading}
           />
         </div>
         <div className="space-y-2">
@@ -88,7 +94,6 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={isLoading}
           />
         </div>
         <Button 
