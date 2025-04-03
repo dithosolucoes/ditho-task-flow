@@ -11,7 +11,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { TaskDetails } from "@/components/tasks/TaskDetails";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 
 const Calendar = () => {
@@ -172,6 +172,9 @@ const Calendar = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Criar Nova Tarefa</DialogTitle>
+            <DialogDescription>
+              Preencha os campos abaixo para criar uma nova tarefa.
+            </DialogDescription>
           </DialogHeader>
           <TaskForm 
             onSubmit={handleAddTaskSubmit} 

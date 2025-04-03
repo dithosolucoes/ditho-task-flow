@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { format } from "date-fns";
@@ -17,6 +16,7 @@ import { useTasks } from "@/hooks/useTasks";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -301,6 +301,9 @@ const Today = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Criar Nova Tarefa</DialogTitle>
+              <DialogDescription>
+                Preencha os campos abaixo para criar uma nova tarefa.
+              </DialogDescription>
             </DialogHeader>
             <TaskForm 
               onSubmit={handleTaskCreate}
