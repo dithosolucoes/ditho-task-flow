@@ -6,79 +6,93 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Clock, ListTodo, CalendarClock } from "lucide-react";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock data
-const mockTasks = [
-  {
-    id: "1",
-    title: "Finalizar relatório mensal",
-    description: "Completar o relatório de vendas do mês de agosto",
-    completed: false,
-    dueDate: new Date(2023, 8, 28),
-    priority: "high" as const,
-    createdAt: new Date(2023, 8, 20),
-  },
-  {
-    id: "2",
-    title: "Reunião com equipe de marketing",
-    description: "Discutir a nova campanha de lançamento do produto",
-    completed: false,
-    dueDate: new Date(2023, 8, 25),
-    priority: "medium" as const,
-    createdAt: new Date(2023, 8, 19),
-  },
-  {
-    id: "3",
-    title: "Atualizar documentação",
-    description: "Revisar e atualizar a documentação do projeto",
-    completed: true,
-    dueDate: new Date(2023, 8, 22),
-    priority: "low" as const,
-    createdAt: new Date(2023, 8, 18),
-  },
-  {
-    id: "4",
-    title: "Preparar apresentação",
-    description: "Criar slides para a apresentação na conferência",
-    completed: false,
-    dueDate: new Date(2023, 8, 30),
-    priority: "medium" as const,
-    createdAt: new Date(2023, 8, 21),
-  },
-];
+import { useTasks } from "@/hooks/useTasks";
+import { Task } from "@/types/task";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
-  const [tasks, setTasks] = useState(mockTasks);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const { 
+    useTasksQuery, 
+    useToggleTaskCompletionMutation 
+  } = useTasks();
+  
+  const tasksQuery = useTasksQuery();
+  const toggleTaskMutation = useToggleTaskCompletionMutation();
 
   const handleTaskComplete = (id: string, completed: boolean) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === id ? { ...task, completed } : task
-      )
-    );
-    
-    toast({
-      title: completed ? "Tarefa concluída!" : "Tarefa reaberta",
-      description: "Status da tarefa atualizado com sucesso.",
+    toggleTaskMutation.mutate({ id, completed }, {
+      onSuccess: () => {
+        toast({
+          title: completed ? "Tarefa concluída!" : "Tarefa reaberta",
+          description: "Status da tarefa atualizado com sucesso.",
+        });
+      }
     });
   };
 
-  const handleTaskClick = (task: any) => {
+  const handleTaskClick = (task: Task) => {
     navigate("/tasks");
   };
 
+  // Dados do carregamento
+  if (tasksQuery.isLoading) {
+    return (
+      <DashboardLayout title="Dashboard">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-32" />
+        </div>
+        <div className="mt-8">
+          <Skeleton className="h-8 w-64 mb-4" />
+          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Tratamento de erro
+  if (tasksQuery.isError) {
+    return (
+      <DashboardLayout title="Dashboard">
+        <div className="text-center py-10">
+          <p className="text-red-500 text-lg">
+            Erro ao carregar tarefas. Tente novamente mais tarde.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const tasks = tasksQuery.data || [];
   const pendingTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
+  
+  // Tarefas para hoje
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
   const todayTasks = tasks.filter(task => {
     if (!task.dueDate) return false;
-    const today = new Date();
-    return (
-      task.dueDate.getDate() === today.getDate() &&
-      task.dueDate.getMonth() === today.getMonth() &&
-      task.dueDate.getFullYear() === today.getFullYear()
-    );
+    const taskDate = new Date(task.dueDate);
+    taskDate.setHours(0, 0, 0, 0);
+    return taskDate.getTime() === today.getTime();
+  });
+
+  // Tarefas futuras
+  const futureTasks = pendingTasks.filter(task => {
+    if (!task.dueDate) return false;
+    const taskDate = new Date(task.dueDate);
+    taskDate.setHours(0, 0, 0, 0);
+    return taskDate.getTime() > today.getTime();
   });
 
   return (
@@ -104,7 +118,7 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{completedTasks.length}</div>
             <p className="text-xs text-muted-foreground">
-              {Math.round((completedTasks.length / tasks.length) * 100) || 0}% do total
+              {tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
@@ -126,9 +140,7 @@ const Dashboard = () => {
             <CalendarClock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {pendingTasks.filter(t => t.dueDate && t.dueDate > new Date()).length}
-            </div>
+            <div className="text-2xl font-bold">{futureTasks.length}</div>
             <p className="text-xs text-muted-foreground">
               Tarefas com prazo futuro
             </p>
@@ -160,16 +172,24 @@ const Dashboard = () => {
 
       <div className="mt-8">
         <h2 className="text-lg font-semibold mb-4 text-ditho-navy">Tarefas Recentes</h2>
-        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {tasks.slice(0, 3).map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onComplete={handleTaskComplete}
-              onClick={handleTaskClick}
-            />
-          ))}
-        </div>
+        {tasks.length === 0 ? (
+          <Card className="bg-muted/50">
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">Nenhuma tarefa disponível.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {tasks.slice(0, 3).map(task => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onComplete={handleTaskComplete}
+                onClick={handleTaskClick}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

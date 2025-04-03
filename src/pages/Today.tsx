@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Task, TaskCategory } from "@/types/task";
 import { TaskDetails } from "@/components/tasks/TaskDetails";
 import { TaskForm } from "@/components/tasks/TaskForm";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTasks } from "@/hooks/useTasks";
 import {
   Dialog,
   DialogContent,
@@ -20,103 +21,39 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Definindo o tipo para os dados de mock para garantir consistência
-type MockTask = {
-  id: string;
-  title: string;
-  description: string;
-  completed: boolean;
-  dueDate?: Date;
-  priority: "low" | "medium" | "high";
-  createdAt: Date;
-  category: TaskCategory;
-};
-
-// Mock data - mesmas tarefas do Tasks.tsx com categorias adicionadas
-const mockTasks: MockTask[] = [
-  {
-    id: "1",
-    title: "Finalizar relatório mensal",
-    description: "Completar o relatório de vendas do mês de agosto",
-    completed: false,
-    dueDate: new Date(2023, 8, 28),
-    priority: "high" as const,
-    createdAt: new Date(2023, 8, 20),
-    category: "pending" as const, // Tarefa pendente (atrasada)
-  },
-  {
-    id: "2",
-    title: "Reunião com equipe de marketing",
-    description: "Discutir a nova campanha de lançamento do produto",
-    completed: false,
-    dueDate: new Date(2023, 8, 25),
-    priority: "medium" as const,
-    createdAt: new Date(2023, 8, 19),
-    category: "scheduled" as const, // Tarefa agendada para hoje
-  },
-  {
-    id: "3",
-    title: "Atualizar documentação",
-    description: "Revisar e atualizar a documentação do projeto",
-    completed: true,
-    dueDate: new Date(2023, 8, 22),
-    priority: "low" as const,
-    createdAt: new Date(2023, 8, 18),
-    category: "new" as const, // Nova tarefa para hoje
-  },
-  {
-    id: "4",
-    title: "Preparar apresentação",
-    description: "Criar slides para a apresentação na conferência",
-    completed: false,
-    dueDate: new Date(2023, 8, 30),
-    priority: "medium" as const,
-    createdAt: new Date(2023, 8, 21),
-    category: "pending" as const,
-  },
-  {
-    id: "5",
-    title: "Revisar código do projeto",
-    description: "Fazer code review das novas funcionalidades implementadas",
-    completed: false,
-    priority: "high" as const,
-    createdAt: new Date(2023, 8, 21),
-    category: "new" as const,
-  },
-  {
-    id: "6",
-    title: "Atualizar plugins",
-    description: "Atualizar plugins do site para as versões mais recentes",
-    completed: true,
-    dueDate: new Date(2023, 8, 15),
-    priority: "low" as const,
-    createdAt: new Date(2023, 8, 10),
-    category: "scheduled" as const,
-  },
-];
-
 const Today = () => {
-  const [tasks, setTasks] = useState<MockTask[]>(mockTasks);
-  const [selectedTask, setSelectedTask] = useState<MockTask | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createCategory, setCreateCategory] = useState<TaskCategory>("new");
   const { toast } = useToast();
 
+  const { 
+    useTasksQuery,
+    useAddTaskMutation,
+    useUpdateTaskMutation,
+    useDeleteTaskMutation,
+    useToggleTaskCompletionMutation
+  } = useTasks();
+  
+  const tasksQuery = useTasksQuery();
+  const addTaskMutation = useAddTaskMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
+  const toggleTaskMutation = useToggleTaskCompletionMutation();
+
   const handleTaskComplete = (id: string, completed: boolean) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === id ? { ...task, completed } : task
-      )
-    );
-    
-    toast({
-      title: completed ? "Tarefa concluída!" : "Tarefa reaberta",
-      description: "Status da tarefa atualizado com sucesso.",
+    toggleTaskMutation.mutate({ id, completed }, {
+      onSuccess: () => {
+        toast({
+          title: completed ? "Tarefa concluída!" : "Tarefa reaberta",
+          description: "Status da tarefa atualizado com sucesso.",
+        });
+      }
     });
   };
 
-  const handleTaskClick = (task: MockTask) => {
+  const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setIsDetailsOpen(true);
   };
@@ -128,60 +65,101 @@ const Today = () => {
     setIsCreateDialogOpen(true);
   };
 
-  const handleTaskCreate = (newTask: Task) => {
-    // Convertendo de Task para MockTask
-    const mockTask: MockTask = {
+  const handleTaskCreate = (newTask: Omit<Task, "id" | "createdAt">) => {
+    addTaskMutation.mutate({
       ...newTask,
-      description: newTask.description || "", // Garantir que description seja uma string
-      category: newTask.category || createCategory, // Garantir que category seja definido
-    };
-    
-    setTasks(prev => [...prev, mockTask]);
-    setIsCreateDialogOpen(false);
-    
-    toast({
-      title: "Tarefa criada",
-      description: `"${newTask.title}" foi adicionada com sucesso.`,
+      category: newTask.category || createCategory
+    }, {
+      onSuccess: () => {
+        setIsCreateDialogOpen(false);
+        toast({
+          title: "Tarefa criada",
+          description: `"${newTask.title}" foi adicionada com sucesso.`,
+        });
+      }
     });
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {
-    // Convertendo de Task para MockTask
-    const mockTask: MockTask = {
-      ...updatedTask,
-      description: updatedTask.description || "", // Garantir que description seja uma string
-      category: updatedTask.category || selectedTask?.category || "new", // Garantir que category seja definido
-    };
-    
-    setTasks(prev => 
-      prev.map(task => task.id === mockTask.id ? mockTask : task)
-    );
-    setSelectedTask(mockTask);
-    
-    toast({
-      title: "Tarefa atualizada",
-      description: "As alterações foram salvas com sucesso.",
+    updateTaskMutation.mutate(updatedTask, {
+      onSuccess: () => {
+        toast({
+          title: "Tarefa atualizada",
+          description: "As alterações foram salvas com sucesso.",
+        });
+      }
     });
   };
 
   const handleTaskDelete = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
-    
-    toast({
-      title: "Tarefa excluída",
-      description: "A tarefa foi removida permanentemente.",
-      variant: "destructive",
+    deleteTaskMutation.mutate(id, {
+      onSuccess: () => {
+        setIsDetailsOpen(false);
+        toast({
+          title: "Tarefa excluída",
+          description: "A tarefa foi removida permanentemente.",
+          variant: "destructive",
+        });
+      }
     });
   };
 
+  // Dados do carregamento
+  if (tasksQuery.isLoading) {
+    return (
+      <DashboardLayout title="Hoje">
+        <div className="space-y-6">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-64" />
+            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              <Skeleton className="h-40" />
+              <Skeleton className="h-40" />
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Tratamento de erro
+  if (tasksQuery.isError) {
+    return (
+      <DashboardLayout title="Hoje">
+        <div className="text-center py-10">
+          <p className="text-red-500 text-lg">
+            Erro ao carregar tarefas. Tente novamente mais tarde.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const tasks = tasksQuery.data || [];
+  
+  // Filtrar apenas tarefas para hoje
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const todayTasks = tasks.filter(task => {
+    if (task.dueDate) {
+      const taskDate = new Date(task.dueDate);
+      taskDate.setHours(0, 0, 0, 0);
+      return taskDate.getTime() === today.getTime();
+    }
+    // Incluir tarefas sem data como sendo de hoje
+    return !task.dueDate && task.category === "new";
+  });
+
   // Filtrando as tarefas por categoria
-  const newTasks = tasks.filter(task => task.category === "new");
-  const pendingTasks = tasks.filter(task => task.category === "pending");
-  const scheduledTasks = tasks.filter(task => task.category === "scheduled");
+  const newTasks = todayTasks.filter(task => task.category === "new");
+  const pendingTasks = todayTasks.filter(task => task.category === "pending");
+  const scheduledTasks = todayTasks.filter(task => task.category === "scheduled");
   
   // Calculando o progresso das tarefas de hoje
-  const totalTasks = tasks.length;
-  const completedTasksCount = tasks.filter(task => task.completed).length;
+  const totalTasks = todayTasks.length;
+  const completedTasksCount = todayTasks.filter(task => task.completed).length;
   const progressPercentage = totalTasks > 0 ? Math.round((completedTasksCount / totalTasks) * 100) : 0;
 
   return (

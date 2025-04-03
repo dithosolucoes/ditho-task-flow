@@ -10,24 +10,37 @@ import { TaskCard } from "@/components/tasks/TaskCard";
 import { useTasks } from "@/hooks/useTasks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskForm } from "@/components/tasks/TaskForm";
+import { TaskDetails } from "@/components/tasks/TaskDetails";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 
 const Calendar = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
   
-  const { useTasksQuery, useToggleTaskCompletionMutation, useAddTaskMutation } = useTasks();
+  const { 
+    useTasksQuery, 
+    useToggleTaskCompletionMutation, 
+    useAddTaskMutation,
+    useUpdateTaskMutation,
+    useDeleteTaskMutation
+  } = useTasks();
+  
   const tasksQuery = useTasksQuery();
   const toggleTaskMutation = useToggleTaskCompletionMutation();
   const addTaskMutation = useAddTaskMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
 
   const handleTaskComplete = (id: string, completed: boolean) => {
     toggleTaskMutation.mutate({ id, completed });
   };
 
   const handleTaskClick = (task: Task) => {
-    // Implementar lógica para visualizar detalhes da tarefa se necessário
+    setSelectedTask(task);
+    setIsTaskDetailsOpen(true);
   };
 
   const handleAddTaskClick = () => {
@@ -43,6 +56,22 @@ const Calendar = () => {
     }, {
       onSuccess: () => {
         setIsCreateDialogOpen(false);
+      }
+    });
+  };
+
+  const handleUpdateTask = (updatedTask: Task) => {
+    updateTaskMutation.mutate(updatedTask, {
+      onSuccess: () => {
+        setIsTaskDetailsOpen(false);
+      }
+    });
+  };
+
+  const handleDeleteTask = (id: string) => {
+    deleteTaskMutation.mutate(id, {
+      onSuccess: () => {
+        setIsTaskDetailsOpen(false);
       }
     });
   };
@@ -77,9 +106,9 @@ const Calendar = () => {
   const tasksForSelectedDate = date 
     ? tasks.filter(task => 
         task.dueDate && 
-        task.dueDate.getDate() === date.getDate() &&
-        task.dueDate.getMonth() === date.getMonth() &&
-        task.dueDate.getFullYear() === date.getFullYear()
+        new Date(task.dueDate).getDate() === date.getDate() &&
+        new Date(task.dueDate).getMonth() === date.getMonth() &&
+        new Date(task.dueDate).getFullYear() === date.getFullYear()
       )
     : [];
 
@@ -151,6 +180,18 @@ const Calendar = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Detalhes da tarefa */}
+      {selectedTask && (
+        <TaskDetails
+          task={selectedTask}
+          isOpen={isTaskDetailsOpen}
+          onClose={() => setIsTaskDetailsOpen(false)}
+          onComplete={handleTaskComplete}
+          onSave={handleUpdateTask}
+          onDelete={handleDeleteTask}
+        />
+      )}
     </DashboardLayout>
   );
 };
