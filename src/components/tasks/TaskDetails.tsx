@@ -5,14 +5,13 @@ import { ptBR } from "date-fns/locale";
 import { Task, TaskPriority } from "@/types/task";
 import { Button } from "@/components/ui/button";
 import { 
-  Drawer, 
-  DrawerClose, 
-  DrawerContent, 
-  DrawerDescription, 
-  DrawerFooter, 
-  DrawerHeader, 
-  DrawerTitle 
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, AlertTriangle, CheckCircle2, Edit } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -78,10 +77,10 @@ export function TaskDetails({
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[90vh]">
-        <DrawerHeader className="border-b pb-4">
-          <DrawerTitle className="text-xl font-bold flex items-center justify-between">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold flex items-center justify-between">
             {!editing ? (
               <>
                 <span className={task.completed ? "line-through text-gray-400" : ""}>
@@ -99,17 +98,17 @@ export function TaskDetails({
             ) : (
               "Editar Tarefa"
             )}
-          </DrawerTitle>
+          </DialogTitle>
           {!editing && task.category && (
-            <DrawerDescription className="flex items-center mt-2">
+            <DialogDescription className="flex items-center mt-2">
               {categoryIcons[task.category]}
               <span className="ml-2">Tarefa {categoryLabels[task.category]}</span>
-            </DrawerDescription>
+            </DialogDescription>
           )}
-        </DrawerHeader>
+        </DialogHeader>
 
         {editing ? (
-          <div className="px-4 py-2">
+          <div className="py-2">
             <TaskForm 
               task={task} 
               onSubmit={handleSave} 
@@ -117,7 +116,7 @@ export function TaskDetails({
             />
           </div>
         ) : (
-          <div className="p-4 space-y-6">
+          <div className="space-y-6">
             {task.description && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-gray-500">Descrição</h3>
@@ -182,13 +181,11 @@ export function TaskDetails({
         )}
         
         {!editing && (
-          <DrawerFooter className="border-t pt-4">
-            <DrawerClose asChild>
-              <Button variant="outline">Fechar</Button>
-            </DrawerClose>
-          </DrawerFooter>
+          <DialogFooter className="border-t pt-4">
+            <Button variant="outline" onClick={onClose}>Fechar</Button>
+          </DialogFooter>
         )}
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -7,7 +7,12 @@ import { Search, Plus } from "lucide-react";
 import { Task } from "@/types/task";
 import { TaskDetails } from "./TaskDetails";
 import { TaskForm } from "./TaskForm";
-import { Drawer, DrawerContent, DrawerTitle, DrawerHeader, DrawerDescription } from "@/components/ui/drawer";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type TaskListProps = {
   tasks: Task[];
@@ -18,7 +23,7 @@ type TaskListProps = {
 
 export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: TaskListProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isNewTaskDrawerOpen, setIsNewTaskDrawerOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
   
@@ -28,7 +33,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
   );
 
   const handleAddTaskClick = () => {
-    setIsNewTaskDrawerOpen(true);
+    setIsCreateDialogOpen(true);
   };
 
   const handleTaskClick = (task: Task) => {
@@ -39,7 +44,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
 
   const handleAddTaskSubmit = (task: Task) => {
     console.log("Adicionando nova tarefa:", task);
-    setIsNewTaskDrawerOpen(false);
+    setIsCreateDialogOpen(false);
     onAddTask();
   };
 
@@ -80,23 +85,18 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
         </div>
       )}
 
-      {/* Drawer para adicionar novas tarefas */}
-      <Drawer open={isNewTaskDrawerOpen} onOpenChange={setIsNewTaskDrawerOpen}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="border-b pb-4">
-            <DrawerTitle className="text-xl font-bold">Nova Tarefa</DrawerTitle>
-            <DrawerDescription>
-              Preencha os campos para adicionar uma nova tarefa
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="p-4">
-            <TaskForm 
-              onSubmit={handleAddTaskSubmit} 
-              onCancel={() => setIsNewTaskDrawerOpen(false)} 
-            />
-          </div>
-        </DrawerContent>
-      </Drawer>
+      {/* Dialog para adicionar novas tarefas - SUBSTITUÍDO O DRAWER POR DIALOG */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar Nova Tarefa</DialogTitle>
+          </DialogHeader>
+          <TaskForm 
+            onSubmit={handleAddTaskSubmit} 
+            onCancel={() => setIsCreateDialogOpen(false)} 
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Detalhes da tarefa */}
       {selectedTask && (
