@@ -5,18 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-type TaskPriority = "low" | "medium" | "high";
-
-type Task = {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  dueDate?: Date;
-  priority: TaskPriority;
-  createdAt: Date;
-};
+import { Task } from "@/types/task";
 
 type TaskCardProps = {
   task: Task;
@@ -24,13 +13,13 @@ type TaskCardProps = {
   onClick: (task: Task) => void;
 };
 
-const priorityColors: Record<TaskPriority, string> = {
+const priorityColors: Record<string, string> = {
   low: "bg-blue-100 text-blue-800 hover:bg-blue-200",
   medium: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
   high: "bg-red-100 text-red-800 hover:bg-red-200",
 };
 
-const priorityLabels: Record<TaskPriority, string> = {
+const priorityLabels: Record<string, string> = {
   low: "Baixa",
   medium: "Média",
   high: "Alta",

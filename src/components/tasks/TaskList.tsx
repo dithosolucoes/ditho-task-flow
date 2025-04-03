@@ -4,18 +4,7 @@ import { TaskCard } from "./TaskCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Plus } from "lucide-react";
-
-type TaskPriority = "low" | "medium" | "high";
-
-type Task = {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  dueDate?: Date;
-  priority: TaskPriority;
-  createdAt: Date;
-};
+import { Task } from "@/types/task";
 
 type TaskListProps = {
   tasks: Task[];

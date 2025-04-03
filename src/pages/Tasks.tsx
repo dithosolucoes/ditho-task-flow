@@ -4,16 +4,17 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TaskList } from "@/components/tasks/TaskList";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Task } from "@/types/task";
 
 // Mock data
-const mockTasks = [
+const mockTasks: Task[] = [
   {
     id: "1",
     title: "Finalizar relatório mensal",
     description: "Completar o relatório de vendas do mês de agosto",
     completed: false,
     dueDate: new Date(2023, 8, 28),
-    priority: "high" as const,
+    priority: "high",
     createdAt: new Date(2023, 8, 20),
   },
   {
@@ -22,7 +23,7 @@ const mockTasks = [
     description: "Discutir a nova campanha de lançamento do produto",
     completed: false,
     dueDate: new Date(2023, 8, 25),
-    priority: "medium" as const,
+    priority: "medium",
     createdAt: new Date(2023, 8, 19),
   },
   {
@@ -31,7 +32,7 @@ const mockTasks = [
     description: "Revisar e atualizar a documentação do projeto",
     completed: true,
     dueDate: new Date(2023, 8, 22),
-    priority: "low" as const,
+    priority: "low",
     createdAt: new Date(2023, 8, 18),
   },
   {
@@ -40,7 +41,7 @@ const mockTasks = [
     description: "Criar slides para a apresentação na conferência",
     completed: false,
     dueDate: new Date(2023, 8, 30),
-    priority: "medium" as const,
+    priority: "medium",
     createdAt: new Date(2023, 8, 21),
   },
   {
@@ -48,7 +49,7 @@ const mockTasks = [
     title: "Revisar código do projeto",
     description: "Fazer code review das novas funcionalidades implementadas",
     completed: false,
-    priority: "high" as const,
+    priority: "high",
     createdAt: new Date(2023, 8, 21),
   },
   {
@@ -57,7 +58,7 @@ const mockTasks = [
     description: "Atualizar plugins do site para as versões mais recentes",
     completed: true,
     dueDate: new Date(2023, 8, 15),
-    priority: "low" as const,
+    priority: "low",
     createdAt: new Date(2023, 8, 10),
   },
 ];
@@ -79,7 +80,7 @@ const Tasks = () => {
     });
   };
 
-  const handleTaskClick = (task: any) => {
+  const handleTaskClick = (task: Task) => {
     toast({
       title: "Detalhes da tarefa",
       description: `Visualizando detalhes de: ${task.title}`,
