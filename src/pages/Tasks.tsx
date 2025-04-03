@@ -1,14 +1,21 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TaskList } from "@/components/tasks/TaskList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/types/task";
 import { useTasks } from "@/hooks/useTasks";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const navigate = useNavigate();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   
   const { 
     useTasksQuery, 
@@ -17,6 +24,12 @@ const Tasks = () => {
     useDeleteTaskMutation 
   } = useTasks();
   
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      console.log("Not authenticated, redirecting to login");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
   const tasksQuery = useTasksQuery();
   const toggleTaskMutation = useToggleTaskCompletionMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
@@ -43,7 +56,24 @@ const Tasks = () => {
   const pendingTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
 
-  if (tasksQuery.isLoading) {
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <DashboardLayout title="Tarefas">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Não autenticado</AlertTitle>
+          <AlertDescription>
+            Você precisa estar logado para visualizar e gerenciar suas tarefas.
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <Button onClick={() => navigate("/login")}>Ir para o Login</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (tasksQuery.isLoading || authLoading) {
     return (
       <DashboardLayout title="Tarefas">
         <div className="space-y-4">
@@ -85,6 +115,7 @@ const Tasks = () => {
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
             onAddTask={handleAddTask}
+            onDeleteTask={handleDeleteTask}
           />
         </TabsContent>
         
@@ -94,6 +125,7 @@ const Tasks = () => {
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
             onAddTask={handleAddTask}
+            onDeleteTask={handleDeleteTask}
           />
         </TabsContent>
         
@@ -103,6 +135,7 @@ const Tasks = () => {
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
             onAddTask={handleAddTask}
+            onDeleteTask={handleDeleteTask}
           />
         </TabsContent>
       </Tabs>

@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TaskCard } from "./TaskCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,19 +15,29 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useTasks } from "@/hooks/useTasks";
+import { useAuth } from "@/contexts/AuthContext";
 
 type TaskListProps = {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onTaskComplete: (id: string, completed: boolean) => void;
   onAddTask: (task: Omit<Task, "id" | "createdAt">) => void;
+  onDeleteTask: (id: string) => void;
 };
 
-export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: TaskListProps) {
+export function TaskList({ 
+  tasks, 
+  onTaskClick, 
+  onTaskComplete, 
+  onAddTask,
+  onDeleteTask 
+}: TaskListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   
   const { useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation } = useTasks();
   const addTaskMutation = useAddTaskMutation();
@@ -39,6 +50,10 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
   );
 
   const handleAddTaskClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
     setIsCreateDialogOpen(true);
   };
 
@@ -49,6 +64,11 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
   };
 
   const handleAddTaskSubmit = (task: Omit<Task, "id" | "createdAt">) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    
     addTaskMutation.mutate(task, {
       onSuccess: () => {
         setIsCreateDialogOpen(false);
@@ -69,6 +89,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
     deleteTaskMutation.mutate(id, {
       onSuccess: () => {
         setIsTaskDetailsOpen(false);
+        onDeleteTask(id);
       }
     });
   };
