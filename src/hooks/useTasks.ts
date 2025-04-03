@@ -14,24 +14,25 @@ export function useTasks() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
 
-  // Função para buscar todas as tarefas do usuário
+  // Function to fetch all tasks for the user
   const fetchTasks = async (): Promise<Task[]> => {
-    if (!isAuthenticated) {
-      console.log("Usuário não autenticado ao buscar tarefas");
+    if (!isAuthenticated || !user) {
+      console.log("User not authenticated when fetching tasks", { isAuthenticated, userId: user?.id });
       return [];
     }
 
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Erro ao buscar tarefas:", error);
+      console.error("Error fetching tasks:", error);
       throw new Error(error.message);
     }
 
-    // Converte as datas de string para objetos Date e mapeia para o tipo Task
+    // Convert dates from string to Date objects and map to Task type
     return (data || []).map((task: DbTask) => ({
       id: task.id,
       title: task.title,
@@ -44,16 +45,17 @@ export function useTasks() {
     }));
   };
 
-  // Função para buscar uma tarefa específica por ID
+  // Function to fetch a specific task by ID
   const fetchTaskById = async (id: string): Promise<Task> => {
-    if (!isAuthenticated) {
-      throw new Error("Usuário não autenticado");
+    if (!isAuthenticated || !user) {
+      throw new Error("User not authenticated");
     }
 
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
       .eq("id", id)
+      .eq("user_id", user.id)
       .single();
 
     if (error) {
@@ -61,7 +63,7 @@ export function useTasks() {
     }
 
     if (!data) {
-      throw new Error("Tarefa não encontrada");
+      throw new Error("Task not found");
     }
 
     return {
@@ -76,10 +78,11 @@ export function useTasks() {
     };
   };
 
-  // Função para adicionar uma nova tarefa
+  // Function to add a new task
   const addTask = async (task: Omit<Task, "id" | "createdAt">): Promise<Task> => {
     if (!isAuthenticated || !user) {
-      throw new Error("Usuário não autenticado");
+      console.error("User not authenticated when adding task", { isAuthenticated, userId: user?.id });
+      throw new Error("User not authenticated");
     }
 
     const taskData = {
@@ -92,7 +95,7 @@ export function useTasks() {
       user_id: user.id
     };
 
-    console.log("Adicionando tarefa com dados:", taskData);
+    console.log("Adding task with data:", taskData);
 
     const { data, error } = await supabase
       .from("tasks")
@@ -101,12 +104,12 @@ export function useTasks() {
       .single();
 
     if (error) {
-      console.error("Erro ao adicionar tarefa:", error);
+      console.error("Error adding task:", error);
       throw new Error(error.message);
     }
 
     if (!data) {
-      throw new Error("Erro ao criar tarefa");
+      throw new Error("Error creating task");
     }
 
     return {
@@ -121,8 +124,12 @@ export function useTasks() {
     };
   };
 
-  // Função para atualizar uma tarefa existente
+  // Function to update an existing task
   const updateTask = async (task: Task): Promise<Task> => {
+    if (!isAuthenticated || !user) {
+      throw new Error("User not authenticated");
+    }
+
     const taskData = {
       title: task.title,
       description: task.description,
@@ -136,6 +143,7 @@ export function useTasks() {
       .from("tasks")
       .update(taskData)
       .eq("id", task.id)
+      .eq("user_id", user.id)
       .select()
       .single();
 
@@ -144,7 +152,7 @@ export function useTasks() {
     }
 
     if (!data) {
-      throw new Error("Erro ao atualizar tarefa");
+      throw new Error("Error updating task");
     }
 
     return {
@@ -159,61 +167,71 @@ export function useTasks() {
     };
   };
 
-  // Função para marcar uma tarefa como completa/incompleta
+  // Function to mark a task as complete/incomplete
   const toggleTaskCompletion = async ({ id, completed }: { id: string; completed: boolean }): Promise<void> => {
+    if (!isAuthenticated || !user) {
+      throw new Error("User not authenticated");
+    }
+
     const { error } = await supabase
       .from("tasks")
       .update({ completed })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (error) {
       throw new Error(error.message);
     }
   };
 
-  // Função para excluir uma tarefa
+  // Function to delete a task
   const deleteTask = async (id: string): Promise<void> => {
+    if (!isAuthenticated || !user) {
+      throw new Error("User not authenticated");
+    }
+
     const { error } = await supabase
       .from("tasks")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user.id);
 
     if (error) {
       throw new Error(error.message);
     }
   };
 
-  // Hook do React Query para buscar todas as tarefas
+  // React Query hook to fetch all tasks
   const useTasksQuery = () => {
     return useQuery({
-      queryKey: ["tasks"],
+      queryKey: ["tasks", user?.id],
       queryFn: fetchTasks,
-      enabled: isAuthenticated, // Só executa a query se o usuário estiver autenticado
+      enabled: isAuthenticated && !!user, // Only run the query if the user is authenticated
     });
   };
 
-  // Hook do React Query para buscar uma tarefa específica
+  // React Query hook to fetch a specific task
   const useTaskQuery = (id: string) => {
     return useQuery({
-      queryKey: ["task", id],
+      queryKey: ["task", id, user?.id],
       queryFn: () => fetchTaskById(id),
-      enabled: !!id && isAuthenticated, // Só executa a query se o ID existir e o usuário estiver autenticado
+      enabled: !!id && isAuthenticated && !!user, // Only run the query if the ID exists and the user is authenticated
     });
   };
 
-  // Mutation para adicionar uma tarefa
+  // Mutation to add a task
   const useAddTaskMutation = () => {
     return useMutation({
       mutationFn: addTask,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
         toast({
           title: "Tarefa adicionada",
           description: "Tarefa adicionada com sucesso.",
         });
       },
       onError: (error: any) => {
-        console.error("Erro na mutation de adicionar tarefa:", error);
+        console.error("Error in add task mutation:", error);
         toast({
           title: "Erro ao adicionar tarefa",
           description: error.message || "Ocorreu um erro ao adicionar a tarefa.",
@@ -223,12 +241,12 @@ export function useTasks() {
     });
   };
 
-  // Mutation para atualizar uma tarefa
+  // Mutation to update a task
   const useUpdateTaskMutation = () => {
     return useMutation({
       mutationFn: updateTask,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
         toast({
           title: "Tarefa atualizada",
           description: "Tarefa atualizada com sucesso.",
@@ -244,12 +262,12 @@ export function useTasks() {
     });
   };
 
-  // Mutation para alternar a conclusão de uma tarefa
+  // Mutation to toggle task completion
   const useToggleTaskCompletionMutation = () => {
     return useMutation({
       mutationFn: toggleTaskCompletion,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
       },
       onError: (error: any) => {
         toast({
@@ -261,12 +279,12 @@ export function useTasks() {
     });
   };
 
-  // Mutation para excluir uma tarefa
+  // Mutation to delete a task
   const useDeleteTaskMutation = () => {
     return useMutation({
       mutationFn: deleteTask,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
         toast({
           title: "Tarefa excluída",
           description: "Tarefa excluída com sucesso.",

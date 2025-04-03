@@ -9,6 +9,7 @@ import { Task } from "@/types/task";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface TaskListProps {
   tasks: Task[];
@@ -23,6 +24,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleCreateClick = () => {
     if (!isAuthenticated) {
@@ -31,6 +33,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
         description: "Você precisa estar logado para criar tarefas.",
         variant: "destructive",
       });
+      navigate("/login");
       return;
     }
     setIsCreateDialogOpen(true);
@@ -49,6 +52,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
         description: "Você precisa estar logado para criar tarefas.",
         variant: "destructive",
       });
+      navigate("/login");
       return;
     }
     onAddTask(task);
@@ -110,6 +114,8 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
           isOpen={isTaskDetailsOpen}
           onClose={handleCloseDetails}
           onComplete={onTaskComplete}
+          onSave={() => {}} // Add this prop
+          onDelete={() => {}} // Add this prop
         />
       )}
     </div>

@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Primeiro, configurar o listener para alterações de estado de autenticação
+    // First, set up the listener for authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         console.log("Auth state changed", event, newSession);
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Depois, verificar se já existe uma sessão
+    // Then, check for an existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Current session", currentSession);
       setSession(currentSession);
@@ -55,8 +55,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         throw error;
       }
-
-      // A sessão será atualizada via onAuthStateChange
       
       toast({
         title: "Login realizado com sucesso",
@@ -91,8 +89,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
-      // A sessão será atualizada via onAuthStateChange
-
       toast({
         title: "Conta criada com sucesso",
         description: "Bem-vindo ao Ditho Task!",
@@ -113,7 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       await supabase.auth.signOut();
-      // A sessão será atualizada via onAuthStateChange
       
       toast({
         title: "Logout realizado com sucesso",
