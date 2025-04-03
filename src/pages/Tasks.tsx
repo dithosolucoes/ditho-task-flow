@@ -84,7 +84,7 @@ const Tasks = () => {
             tasks={tasks}
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
-            onAddTask={() => {}}
+            onAddTask={handleAddTask}
           />
         </TabsContent>
         
@@ -93,7 +93,7 @@ const Tasks = () => {
             tasks={pendingTasks}
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
-            onAddTask={() => {}}
+            onAddTask={handleAddTask}
           />
         </TabsContent>
         
@@ -102,7 +102,7 @@ const Tasks = () => {
             tasks={completedTasks}
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
-            onAddTask={() => {}}
+            onAddTask={handleAddTask}
           />
         </TabsContent>
       </Tabs>

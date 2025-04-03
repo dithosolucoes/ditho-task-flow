@@ -23,6 +23,9 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
     navigate("/login");
   };
 
+  // Get user's name from user_metadata if available
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+
   return (
     <div className="flex h-screen bg-ditho-light-beige">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -45,7 +48,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
             
             <div className="flex items-center">
               <div className="mr-4 text-sm text-gray-600">
-                Olá, {user?.name?.split(' ')[0] || 'Usuário'}
+                Olá, {userName.split(' ')[0]}
               </div>
               <Button 
                 variant="ghost" 

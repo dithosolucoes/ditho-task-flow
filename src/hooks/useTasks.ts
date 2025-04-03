@@ -4,6 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task } from "@/types/task";
 import { useToast } from "@/hooks/use-toast";
+import { Database } from "@/integrations/supabase/types";
+
+// Define the database task type
+type DbTask = Database["public"]["Tables"]["tasks"]["Row"];
 
 export function useTasks() {
   const { toast } = useToast();
@@ -20,12 +24,17 @@ export function useTasks() {
       throw new Error(error.message);
     }
 
-    // Converte as datas de string para objetos Date
-    return data.map((task) => ({
-      ...task,
+    // Converte as datas de string para objetos Date e mapeia para o tipo Task
+    return (data || []).map((task: DbTask) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description || undefined,
+      completed: task.completed,
       dueDate: task.due_date ? new Date(task.due_date) : undefined,
-      createdAt: new Date(task.created_at),
-    })) as Task[];
+      priority: task.priority,
+      category: task.category || undefined,
+      createdAt: new Date(task.created_at)
+    }));
   };
 
   // Função para buscar uma tarefa específica por ID
@@ -40,25 +49,36 @@ export function useTasks() {
       throw new Error(error.message);
     }
 
+    if (!data) {
+      throw new Error("Tarefa não encontrada");
+    }
+
     return {
-      ...data,
+      id: data.id,
+      title: data.title,
+      description: data.description || undefined,
+      completed: data.completed,
       dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      createdAt: new Date(data.created_at),
-    } as Task;
+      priority: data.priority,
+      category: data.category || undefined,
+      createdAt: new Date(data.created_at)
+    };
   };
 
   // Função para adicionar uma nova tarefa
   const addTask = async (task: Omit<Task, "id" | "createdAt">): Promise<Task> => {
+    const taskData = {
+      title: task.title,
+      description: task.description,
+      completed: task.completed,
+      due_date: task.dueDate,
+      priority: task.priority,
+      category: task.category,
+    };
+
     const { data, error } = await supabase
       .from("tasks")
-      .insert({
-        title: task.title,
-        description: task.description,
-        completed: task.completed,
-        due_date: task.dueDate,
-        priority: task.priority,
-        category: task.category,
-      })
+      .insert(taskData)
       .select()
       .single();
 
@@ -66,25 +86,36 @@ export function useTasks() {
       throw new Error(error.message);
     }
 
+    if (!data) {
+      throw new Error("Erro ao criar tarefa");
+    }
+
     return {
-      ...data,
+      id: data.id,
+      title: data.title,
+      description: data.description || undefined,
+      completed: data.completed,
       dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      createdAt: new Date(data.created_at),
-    } as Task;
+      priority: data.priority,
+      category: data.category || undefined,
+      createdAt: new Date(data.created_at)
+    };
   };
 
   // Função para atualizar uma tarefa existente
   const updateTask = async (task: Task): Promise<Task> => {
+    const taskData = {
+      title: task.title,
+      description: task.description,
+      completed: task.completed,
+      due_date: task.dueDate,
+      priority: task.priority,
+      category: task.category,
+    };
+
     const { data, error } = await supabase
       .from("tasks")
-      .update({
-        title: task.title,
-        description: task.description,
-        completed: task.completed,
-        due_date: task.dueDate,
-        priority: task.priority,
-        category: task.category,
-      })
+      .update(taskData)
       .eq("id", task.id)
       .select()
       .single();
@@ -93,11 +124,20 @@ export function useTasks() {
       throw new Error(error.message);
     }
 
+    if (!data) {
+      throw new Error("Erro ao atualizar tarefa");
+    }
+
     return {
-      ...data,
+      id: data.id,
+      title: data.title,
+      description: data.description || undefined,
+      completed: data.completed,
       dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      createdAt: new Date(data.created_at),
-    } as Task;
+      priority: data.priority,
+      category: data.category || undefined,
+      createdAt: new Date(data.created_at)
+    };
   };
 
   // Função para marcar uma tarefa como completa/incompleta
