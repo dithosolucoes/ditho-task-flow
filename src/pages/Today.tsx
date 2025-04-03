@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -132,6 +133,7 @@ const Today = () => {
     const mockTask: MockTask = {
       ...newTask,
       description: newTask.description || "", // Garantir que description seja uma string
+      category: newTask.category || createCategory, // Garantir que category seja definido
     };
     
     setTasks(prev => [...prev, mockTask]);
@@ -148,6 +150,7 @@ const Today = () => {
     const mockTask: MockTask = {
       ...updatedTask,
       description: updatedTask.description || "", // Garantir que description seja uma string
+      category: updatedTask.category || selectedTask?.category || "new", // Garantir que category seja definido
     };
     
     setTasks(prev => 
