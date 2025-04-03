@@ -6,9 +6,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/types/task";
 import { useTasks } from "@/hooks/useTasks";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   
   const { 
     useTasksQuery, 
@@ -37,6 +44,28 @@ const Tasks = () => {
   const handleDeleteTask = (id: string) => {
     deleteTaskMutation.mutate(id);
   };
+
+  const handleLoginClick = () => {
+    navigate("/login");
+  };
+
+  // Verificar autenticação
+  if (!isAuthenticated) {
+    return (
+      <DashboardLayout title="Tarefas">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Não autenticado</AlertTitle>
+          <AlertDescription>
+            Você precisa estar logado para visualizar e gerenciar suas tarefas.
+          </AlertDescription>
+        </Alert>
+        <div className="text-center py-10">
+          <Button onClick={handleLoginClick}>Ir para o Login</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   // Dados para as abas
   const tasks = tasksQuery.data || [];

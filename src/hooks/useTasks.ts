@@ -1,11 +1,10 @@
 
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task } from "@/types/task";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { User } from "@supabase/supabase-js";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Define the database task type
 type DbTask = Database["public"]["Tables"]["tasks"]["Row"];
@@ -13,15 +12,22 @@ type DbTask = Database["public"]["Tables"]["tasks"]["Row"];
 export function useTasks() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isAuthenticated } = useAuth();
 
   // Função para buscar todas as tarefas do usuário
   const fetchTasks = async (): Promise<Task[]> => {
+    if (!isAuthenticated) {
+      console.log("Usuário não autenticado ao buscar tarefas");
+      return [];
+    }
+
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
+      console.error("Erro ao buscar tarefas:", error);
       throw new Error(error.message);
     }
 
@@ -40,6 +46,10 @@ export function useTasks() {
 
   // Função para buscar uma tarefa específica por ID
   const fetchTaskById = async (id: string): Promise<Task> => {
+    if (!isAuthenticated) {
+      throw new Error("Usuário não autenticado");
+    }
+
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
@@ -68,10 +78,7 @@ export function useTasks() {
 
   // Função para adicionar uma nova tarefa
   const addTask = async (task: Omit<Task, "id" | "createdAt">): Promise<Task> => {
-    // Obter o usuário atual
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    if (!isAuthenticated || !user) {
       throw new Error("Usuário não autenticado");
     }
 
@@ -85,6 +92,8 @@ export function useTasks() {
       user_id: user.id
     };
 
+    console.log("Adicionando tarefa com dados:", taskData);
+
     const { data, error } = await supabase
       .from("tasks")
       .insert(taskData)
@@ -92,6 +101,7 @@ export function useTasks() {
       .single();
 
     if (error) {
+      console.error("Erro ao adicionar tarefa:", error);
       throw new Error(error.message);
     }
 
@@ -178,6 +188,7 @@ export function useTasks() {
     return useQuery({
       queryKey: ["tasks"],
       queryFn: fetchTasks,
+      enabled: isAuthenticated, // Só executa a query se o usuário estiver autenticado
     });
   };
 
@@ -186,7 +197,7 @@ export function useTasks() {
     return useQuery({
       queryKey: ["task", id],
       queryFn: () => fetchTaskById(id),
-      enabled: !!id,
+      enabled: !!id && isAuthenticated, // Só executa a query se o ID existir e o usuário estiver autenticado
     });
   };
 
@@ -202,6 +213,7 @@ export function useTasks() {
         });
       },
       onError: (error: any) => {
+        console.error("Erro na mutation de adicionar tarefa:", error);
         toast({
           title: "Erro ao adicionar tarefa",
           description: error.message || "Ocorreu um erro ao adicionar a tarefa.",
