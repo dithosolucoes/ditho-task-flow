@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { Task, TaskPriority, TaskCategory } from "@/types/task";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +31,7 @@ import { ptBR } from "date-fns/locale";
 
 type TaskFormProps = {
   task?: Task;
-  onSubmit: (task: Task) => void;
+  onSubmit: (task: Omit<Task, "id" | "createdAt">) => void;
   onCancel: () => void;
   defaultCategory?: TaskCategory;
 };
@@ -43,6 +42,7 @@ const formSchema = z.object({
   priority: z.enum(["low", "medium", "high"] as const),
   category: z.enum(["new", "pending", "scheduled"] as const),
   dueDate: z.date().optional(),
+  completed: z.boolean().default(false),
 });
 
 export function TaskForm({ task, onSubmit, onCancel, defaultCategory = "new" }: TaskFormProps) {
@@ -58,22 +58,21 @@ export function TaskForm({ task, onSubmit, onCancel, defaultCategory = "new" }: 
       priority: task?.priority || "medium",
       category: task?.category || defaultCategory,
       dueDate: task?.dueDate,
+      completed: task?.completed || false,
     },
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    const updatedTask: Task = {
-      id: task?.id || uuidv4(),
+    const newTask: Omit<Task, "id" | "createdAt"> = {
       title: values.title,
       description: values.description || undefined,
-      completed: task?.completed || false,
+      completed: values.completed,
       priority: values.priority as TaskPriority,
       category: values.category,
       dueDate: values.dueDate,
-      createdAt: task?.createdAt || new Date(),
     };
 
-    onSubmit(updatedTask);
+    onSubmit(newTask);
   };
 
   return (

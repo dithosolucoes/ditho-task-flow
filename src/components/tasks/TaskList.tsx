@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTasks } from "@/hooks/useTasks";
 
 type TaskListProps = {
   tasks: Task[];
@@ -26,6 +27,11 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  
+  const { useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation } = useTasks();
+  const addTaskMutation = useAddTaskMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
   
   const filteredTasks = tasks.filter(task => 
     task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -42,10 +48,29 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
     onTaskClick(task);
   };
 
-  const handleAddTaskSubmit = (task: Task) => {
-    console.log("Adicionando nova tarefa:", task);
-    setIsCreateDialogOpen(false);
-    onAddTask();
+  const handleAddTaskSubmit = (task: Omit<Task, "id" | "createdAt">) => {
+    addTaskMutation.mutate(task, {
+      onSuccess: () => {
+        setIsCreateDialogOpen(false);
+        onAddTask();
+      }
+    });
+  };
+
+  const handleUpdateTask = (updatedTask: Task) => {
+    updateTaskMutation.mutate(updatedTask, {
+      onSuccess: () => {
+        setIsTaskDetailsOpen(false);
+      }
+    });
+  };
+
+  const handleDeleteTask = (id: string) => {
+    deleteTaskMutation.mutate(id, {
+      onSuccess: () => {
+        setIsTaskDetailsOpen(false);
+      }
+    });
   };
 
   return (
@@ -85,7 +110,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
         </div>
       )}
 
-      {/* Dialog para adicionar novas tarefas - SUBSTITUÍDO O DRAWER POR DIALOG */}
+      {/* Dialog para adicionar novas tarefas */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -105,14 +130,8 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
           isOpen={isTaskDetailsOpen}
           onClose={() => setIsTaskDetailsOpen(false)}
           onComplete={onTaskComplete}
-          onSave={(updatedTask) => {
-            console.log("Tarefa atualizada:", updatedTask);
-            setIsTaskDetailsOpen(false);
-          }}
-          onDelete={(id) => {
-            console.log("Excluindo tarefa:", id);
-            setIsTaskDetailsOpen(false);
-          }}
+          onSave={handleUpdateTask}
+          onDelete={handleDeleteTask}
         />
       )}
     </div>

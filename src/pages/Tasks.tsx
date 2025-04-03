@@ -2,113 +2,73 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { TaskList } from "@/components/tasks/TaskList";
-import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/types/task";
-import { v4 as uuidv4 } from "uuid";
-
-// Mock data
-const mockTasks: Task[] = [
-  {
-    id: "1",
-    title: "Finalizar relatório mensal",
-    description: "Completar o relatório de vendas do mês de agosto",
-    completed: false,
-    dueDate: new Date(2023, 8, 28),
-    priority: "high",
-    createdAt: new Date(2023, 8, 20),
-  },
-  {
-    id: "2",
-    title: "Reunião com equipe de marketing",
-    description: "Discutir a nova campanha de lançamento do produto",
-    completed: false,
-    dueDate: new Date(2023, 8, 25),
-    priority: "medium",
-    createdAt: new Date(2023, 8, 19),
-  },
-  {
-    id: "3",
-    title: "Atualizar documentação",
-    description: "Revisar e atualizar a documentação do projeto",
-    completed: true,
-    dueDate: new Date(2023, 8, 22),
-    priority: "low",
-    createdAt: new Date(2023, 8, 18),
-  },
-  {
-    id: "4",
-    title: "Preparar apresentação",
-    description: "Criar slides para a apresentação na conferência",
-    completed: false,
-    dueDate: new Date(2023, 8, 30),
-    priority: "medium",
-    createdAt: new Date(2023, 8, 21),
-  },
-  {
-    id: "5",
-    title: "Revisar código do projeto",
-    description: "Fazer code review das novas funcionalidades implementadas",
-    completed: false,
-    priority: "high",
-    createdAt: new Date(2023, 8, 21),
-  },
-  {
-    id: "6",
-    title: "Atualizar plugins",
-    description: "Atualizar plugins do site para as versões mais recentes",
-    completed: true,
-    dueDate: new Date(2023, 8, 15),
-    priority: "low",
-    createdAt: new Date(2023, 8, 10),
-  },
-];
+import { useTasks } from "@/hooks/useTasks";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Tasks = () => {
-  const [tasks, setTasks] = useState(mockTasks);
-  const { toast } = useToast();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
+  const { 
+    useTasksQuery, 
+    useAddTaskMutation, 
+    useToggleTaskCompletionMutation,
+    useDeleteTaskMutation 
+  } = useTasks();
+  
+  const tasksQuery = useTasksQuery();
+  const toggleTaskMutation = useToggleTaskCompletionMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
+  const addTaskMutation = useAddTaskMutation();
 
   const handleTaskComplete = (id: string, completed: boolean) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === id ? { ...task, completed } : task
-      )
-    );
-    
-    toast({
-      title: completed ? "Tarefa concluída!" : "Tarefa reaberta",
-      description: "Status da tarefa atualizado com sucesso.",
-    });
+    toggleTaskMutation.mutate({ id, completed });
   };
 
   const handleTaskClick = (task: Task) => {
-    toast({
-      title: "Detalhes da tarefa",
-      description: `Visualizando detalhes de: ${task.title}`,
-    });
+    setSelectedTask(task);
   };
 
-  const handleAddTask = () => {
-    const newTask: Task = {
-      id: uuidv4(),
-      title: "Nova tarefa",
-      description: "Descrição da nova tarefa",
-      completed: false,
-      priority: "medium",
-      createdAt: new Date(),
-      category: "new"
-    };
-    
-    setTasks(prevTasks => [...prevTasks, newTask]);
-    
-    toast({
-      title: "Tarefa adicionada",
-      description: "Nova tarefa adicionada com sucesso.",
-    });
+  const handleAddTask = (task: Omit<Task, "id" | "createdAt">) => {
+    addTaskMutation.mutate(task);
   };
 
+  const handleDeleteTask = (id: string) => {
+    deleteTaskMutation.mutate(id);
+  };
+
+  // Dados para as abas
+  const tasks = tasksQuery.data || [];
   const pendingTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
+
+  if (tasksQuery.isLoading) {
+    return (
+      <DashboardLayout title="Tarefas">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (tasksQuery.isError) {
+    return (
+      <DashboardLayout title="Tarefas">
+        <div className="text-center py-10">
+          <p className="text-red-500 text-lg">
+            Erro ao carregar tarefas. Tente novamente mais tarde.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Tarefas">
@@ -124,7 +84,7 @@ const Tasks = () => {
             tasks={tasks}
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
-            onAddTask={handleAddTask}
+            onAddTask={() => {}}
           />
         </TabsContent>
         
@@ -133,7 +93,7 @@ const Tasks = () => {
             tasks={pendingTasks}
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
-            onAddTask={handleAddTask}
+            onAddTask={() => {}}
           />
         </TabsContent>
         
@@ -142,7 +102,7 @@ const Tasks = () => {
             tasks={completedTasks}
             onTaskClick={handleTaskClick}
             onTaskComplete={handleTaskComplete}
-            onAddTask={handleAddTask}
+            onAddTask={() => {}}
           />
         </TabsContent>
       </Tabs>
