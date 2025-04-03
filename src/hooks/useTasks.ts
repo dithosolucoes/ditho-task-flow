@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Task } from "@/types/task";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
+import { User } from "@supabase/supabase-js";
 
 // Define the database task type
 type DbTask = Database["public"]["Tables"]["tasks"]["Row"];
@@ -67,13 +68,21 @@ export function useTasks() {
 
   // Função para adicionar uma nova tarefa
   const addTask = async (task: Omit<Task, "id" | "createdAt">): Promise<Task> => {
+    // Obter o usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("Usuário não autenticado");
+    }
+
     const taskData = {
       title: task.title,
       description: task.description,
       completed: task.completed,
-      due_date: task.dueDate,
+      due_date: task.dueDate ? task.dueDate.toISOString() : null,
       priority: task.priority,
       category: task.category,
+      user_id: user.id
     };
 
     const { data, error } = await supabase
@@ -108,7 +117,7 @@ export function useTasks() {
       title: task.title,
       description: task.description,
       completed: task.completed,
-      due_date: task.dueDate,
+      due_date: task.dueDate ? task.dueDate.toISOString() : null,
       priority: task.priority,
       category: task.category,
     };
@@ -141,7 +150,7 @@ export function useTasks() {
   };
 
   // Função para marcar uma tarefa como completa/incompleta
-  const toggleTaskCompletion = async (id: string, completed: boolean): Promise<void> => {
+  const toggleTaskCompletion = async ({ id, completed }: { id: string; completed: boolean }): Promise<void> => {
     const { error } = await supabase
       .from("tasks")
       .update({ completed })
@@ -226,8 +235,7 @@ export function useTasks() {
   // Mutation para alternar a conclusão de uma tarefa
   const useToggleTaskCompletionMutation = () => {
     return useMutation({
-      mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
-        toggleTaskCompletion(id, completed),
+      mutationFn: toggleTaskCompletion,
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["tasks"] });
       },

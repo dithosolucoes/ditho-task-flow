@@ -19,7 +19,7 @@ type TaskListProps = {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onTaskComplete: (id: string, completed: boolean) => void;
-  onAddTask: () => void;
+  onAddTask: (task: Omit<Task, "id" | "createdAt">) => void;
 };
 
 export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: TaskListProps) {
@@ -52,7 +52,7 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
     addTaskMutation.mutate(task, {
       onSuccess: () => {
         setIsCreateDialogOpen(false);
-        onAddTask();
+        onAddTask(task);
       }
     });
   };
