@@ -5,6 +5,7 @@ import { TaskList } from "@/components/tasks/TaskList";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/types/task";
+import { v4 as uuidv4 } from "uuid";
 
 // Mock data
 const mockTasks: Task[] = [
@@ -88,9 +89,21 @@ const Tasks = () => {
   };
 
   const handleAddTask = () => {
-    toast({
+    const newTask: Task = {
+      id: uuidv4(),
       title: "Nova tarefa",
-      description: "Formulário para adicionar uma nova tarefa.",
+      description: "Descrição da nova tarefa",
+      completed: false,
+      priority: "medium",
+      createdAt: new Date(),
+      category: "new"
+    };
+    
+    setTasks(prevTasks => [...prevTasks, newTask]);
+    
+    toast({
+      title: "Tarefa adicionada",
+      description: "Nova tarefa adicionada com sucesso.",
     });
   };
 

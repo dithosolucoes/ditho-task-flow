@@ -11,6 +11,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Tasks from "./pages/Tasks";
 import Today from "./pages/Today";
+import Calendar from "./pages/Calendar";
+import Settings from "./pages/Settings";
 import { AuthProvider } from "./contexts/AuthContext";
 import React from "react";
 
@@ -31,6 +33,8 @@ const App = () => {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/today" element={<Today />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/settings" element={<Settings />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
