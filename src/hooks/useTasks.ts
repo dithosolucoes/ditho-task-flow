@@ -1,10 +1,11 @@
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task } from "@/types/task";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { useAuth } from "@/contexts/AuthContext";
+import { User } from "@supabase/supabase-js";
 
 // Define the database task type
 type DbTask = Database["public"]["Tables"]["tasks"]["Row"];
@@ -12,27 +13,19 @@ type DbTask = Database["public"]["Tables"]["tasks"]["Row"];
 export function useTasks() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, isAuthenticated } = useAuth();
 
-  // Function to fetch all tasks for the user
+  // Função para buscar todas as tarefas do usuário
   const fetchTasks = async (): Promise<Task[]> => {
-    if (!isAuthenticated || !user) {
-      console.log("User not authenticated when fetching tasks", { isAuthenticated, userId: user?.id });
-      return [];
-    }
-
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
-      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching tasks:", error);
       throw new Error(error.message);
     }
 
-    // Convert dates from string to Date objects and map to Task type
+    // Converte as datas de string para objetos Date e mapeia para o tipo Task
     return (data || []).map((task: DbTask) => ({
       id: task.id,
       title: task.title,
@@ -45,17 +38,12 @@ export function useTasks() {
     }));
   };
 
-  // Function to fetch a specific task by ID
+  // Função para buscar uma tarefa específica por ID
   const fetchTaskById = async (id: string): Promise<Task> => {
-    if (!isAuthenticated || !user) {
-      throw new Error("User not authenticated");
-    }
-
     const { data, error } = await supabase
       .from("tasks")
       .select("*")
       .eq("id", id)
-      .eq("user_id", user.id)
       .single();
 
     if (error) {
@@ -63,7 +51,7 @@ export function useTasks() {
     }
 
     if (!data) {
-      throw new Error("Task not found");
+      throw new Error("Tarefa não encontrada");
     }
 
     return {
@@ -78,11 +66,13 @@ export function useTasks() {
     };
   };
 
-  // Function to add a new task
+  // Função para adicionar uma nova tarefa
   const addTask = async (task: Omit<Task, "id" | "createdAt">): Promise<Task> => {
-    if (!isAuthenticated || !user) {
-      console.error("User not authenticated when adding task", { isAuthenticated, userId: user?.id });
-      throw new Error("User not authenticated");
+    // Obter o usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("Usuário não autenticado");
     }
 
     const taskData = {
@@ -95,8 +85,6 @@ export function useTasks() {
       user_id: user.id
     };
 
-    console.log("Adding task with data:", taskData);
-
     const { data, error } = await supabase
       .from("tasks")
       .insert(taskData)
@@ -104,12 +92,11 @@ export function useTasks() {
       .single();
 
     if (error) {
-      console.error("Error adding task:", error);
       throw new Error(error.message);
     }
 
     if (!data) {
-      throw new Error("Error creating task");
+      throw new Error("Erro ao criar tarefa");
     }
 
     return {
@@ -124,12 +111,8 @@ export function useTasks() {
     };
   };
 
-  // Function to update an existing task
+  // Função para atualizar uma tarefa existente
   const updateTask = async (task: Task): Promise<Task> => {
-    if (!isAuthenticated || !user) {
-      throw new Error("User not authenticated");
-    }
-
     const taskData = {
       title: task.title,
       description: task.description,
@@ -143,7 +126,6 @@ export function useTasks() {
       .from("tasks")
       .update(taskData)
       .eq("id", task.id)
-      .eq("user_id", user.id)
       .select()
       .single();
 
@@ -152,7 +134,7 @@ export function useTasks() {
     }
 
     if (!data) {
-      throw new Error("Error updating task");
+      throw new Error("Erro ao atualizar tarefa");
     }
 
     return {
@@ -167,71 +149,59 @@ export function useTasks() {
     };
   };
 
-  // Function to mark a task as complete/incomplete
+  // Função para marcar uma tarefa como completa/incompleta
   const toggleTaskCompletion = async ({ id, completed }: { id: string; completed: boolean }): Promise<void> => {
-    if (!isAuthenticated || !user) {
-      throw new Error("User not authenticated");
-    }
-
     const { error } = await supabase
       .from("tasks")
       .update({ completed })
-      .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("id", id);
 
     if (error) {
       throw new Error(error.message);
     }
   };
 
-  // Function to delete a task
+  // Função para excluir uma tarefa
   const deleteTask = async (id: string): Promise<void> => {
-    if (!isAuthenticated || !user) {
-      throw new Error("User not authenticated");
-    }
-
     const { error } = await supabase
       .from("tasks")
       .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
+      .eq("id", id);
 
     if (error) {
       throw new Error(error.message);
     }
   };
 
-  // React Query hook to fetch all tasks
+  // Hook do React Query para buscar todas as tarefas
   const useTasksQuery = () => {
     return useQuery({
-      queryKey: ["tasks", user?.id],
+      queryKey: ["tasks"],
       queryFn: fetchTasks,
-      enabled: isAuthenticated && !!user, // Only run the query if the user is authenticated
     });
   };
 
-  // React Query hook to fetch a specific task
+  // Hook do React Query para buscar uma tarefa específica
   const useTaskQuery = (id: string) => {
     return useQuery({
-      queryKey: ["task", id, user?.id],
+      queryKey: ["task", id],
       queryFn: () => fetchTaskById(id),
-      enabled: !!id && isAuthenticated && !!user, // Only run the query if the ID exists and the user is authenticated
+      enabled: !!id,
     });
   };
 
-  // Mutation to add a task
+  // Mutation para adicionar uma tarefa
   const useAddTaskMutation = () => {
     return useMutation({
       mutationFn: addTask,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
         toast({
           title: "Tarefa adicionada",
           description: "Tarefa adicionada com sucesso.",
         });
       },
       onError: (error: any) => {
-        console.error("Error in add task mutation:", error);
         toast({
           title: "Erro ao adicionar tarefa",
           description: error.message || "Ocorreu um erro ao adicionar a tarefa.",
@@ -241,12 +211,12 @@ export function useTasks() {
     });
   };
 
-  // Mutation to update a task
+  // Mutation para atualizar uma tarefa
   const useUpdateTaskMutation = () => {
     return useMutation({
       mutationFn: updateTask,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
         toast({
           title: "Tarefa atualizada",
           description: "Tarefa atualizada com sucesso.",
@@ -262,12 +232,12 @@ export function useTasks() {
     });
   };
 
-  // Mutation to toggle task completion
+  // Mutation para alternar a conclusão de uma tarefa
   const useToggleTaskCompletionMutation = () => {
     return useMutation({
       mutationFn: toggleTaskCompletion,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
       },
       onError: (error: any) => {
         toast({
@@ -279,12 +249,12 @@ export function useTasks() {
     });
   };
 
-  // Mutation to delete a task
+  // Mutation para excluir uma tarefa
   const useDeleteTaskMutation = () => {
     return useMutation({
       mutationFn: deleteTask,
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tasks", user?.id] });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
         toast({
           title: "Tarefa excluída",
           description: "Tarefa excluída com sucesso.",

@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 type AuthContextType = {
   user: User | null;
@@ -20,24 +20,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
-    // First, set up the listener for authentication state changes
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        console.log("Auth state changed", event, newSession);
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     );
 
-    // Then, check for an existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Current session", currentSession);
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
@@ -55,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         throw error;
       }
-      
+
       toast({
         title: "Login realizado com sucesso",
         description: "Bem-vindo de volta!",
@@ -91,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
         title: "Conta criada com sucesso",
-        description: "Bem-vindo ao Ditho Task!",
+        description: "Verifique seu email para confirmar o cadastro.",
       });
     } catch (error: any) {
       toast({
@@ -109,7 +106,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       await supabase.auth.signOut();
-      
       toast({
         title: "Logout realizado com sucesso",
         description: "Você saiu da sua conta.",

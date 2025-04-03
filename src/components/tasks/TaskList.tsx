@@ -1,41 +1,44 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
 import { TaskCard } from "./TaskCard";
-import { TaskForm } from "./TaskForm";
-import { TaskDetails } from "./TaskDetails";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, Plus } from "lucide-react";
 import { Task } from "@/types/task";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { TaskDetails } from "./TaskDetails";
+import { TaskForm } from "./TaskForm";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useTasks } from "@/hooks/useTasks";
 
-interface TaskListProps {
+type TaskListProps = {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onTaskComplete: (id: string, completed: boolean) => void;
   onAddTask: (task: Omit<Task, "id" | "createdAt">) => void;
-}
+};
 
 export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: TaskListProps) {
+  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
-  const { isAuthenticated, user } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  
+  const { useAddTaskMutation, useUpdateTaskMutation, useDeleteTaskMutation } = useTasks();
+  const addTaskMutation = useAddTaskMutation();
+  const updateTaskMutation = useUpdateTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
+  
+  const filteredTasks = tasks.filter(task => 
+    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
-  const handleCreateClick = () => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Não autenticado",
-        description: "Você precisa estar logado para criar tarefas.",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
+  const handleAddTaskClick = () => {
     setIsCreateDialogOpen(true);
   };
 
@@ -45,77 +48,90 @@ export function TaskList({ tasks, onTaskClick, onTaskComplete, onAddTask }: Task
     onTaskClick(task);
   };
 
-  const handleAddTask = (task: Omit<Task, "id" | "createdAt">) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Não autenticado",
-        description: "Você precisa estar logado para criar tarefas.",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
-    onAddTask(task);
-    setIsCreateDialogOpen(false);
+  const handleAddTaskSubmit = (task: Omit<Task, "id" | "createdAt">) => {
+    addTaskMutation.mutate(task, {
+      onSuccess: () => {
+        setIsCreateDialogOpen(false);
+        onAddTask(task);
+      }
+    });
   };
 
-  const handleCloseDetails = () => {
-    setIsTaskDetailsOpen(false);
-    setSelectedTask(null);
+  const handleUpdateTask = (updatedTask: Task) => {
+    updateTaskMutation.mutate(updatedTask, {
+      onSuccess: () => {
+        setIsTaskDetailsOpen(false);
+      }
+    });
+  };
+
+  const handleDeleteTask = (id: string) => {
+    deleteTaskMutation.mutate(id, {
+      onSuccess: () => {
+        setIsTaskDetailsOpen(false);
+      }
+    });
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Tarefas</h2>
-        <Button onClick={handleCreateClick} className="flex items-center gap-2">
-          <PlusCircle size={16} />
-          <span>Nova Tarefa</span>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Pesquisar tarefas..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button onClick={handleAddTaskClick} className="bg-ditho-navy hover:bg-ditho-dark-navy">
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Tarefa
         </Button>
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {tasks.length > 0 ? (
-          tasks.map((task) => (
+      
+      {filteredTasks.length === 0 ? (
+        <div className="text-center py-10">
+          <p className="text-muted-foreground">
+            {searchQuery ? "Nenhuma tarefa encontrada." : "Nenhuma tarefa disponível."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {filteredTasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
               onComplete={onTaskComplete}
               onClick={() => handleTaskClick(task)}
             />
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8">
-            <p className="text-muted-foreground mb-4">Não há tarefas disponíveis.</p>
-            <Button variant="outline" onClick={handleCreateClick}>
-              Criar tarefa
-            </Button>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Dialog para criar nova tarefa */}
+      {/* Dialog para adicionar novas tarefas */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Criar Nova Tarefa</DialogTitle>
-            <DialogDescription>
-              Preencha os campos abaixo para criar uma nova tarefa.
-            </DialogDescription>
           </DialogHeader>
-          <TaskForm onSubmit={handleAddTask} onCancel={() => setIsCreateDialogOpen(false)} />
+          <TaskForm 
+            onSubmit={handleAddTaskSubmit} 
+            onCancel={() => setIsCreateDialogOpen(false)} 
+          />
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para detalhes da tarefa */}
+      {/* Detalhes da tarefa */}
       {selectedTask && (
         <TaskDetails
           task={selectedTask}
           isOpen={isTaskDetailsOpen}
-          onClose={handleCloseDetails}
+          onClose={() => setIsTaskDetailsOpen(false)}
           onComplete={onTaskComplete}
-          onSave={() => {}} // Add this prop
-          onDelete={() => {}} // Add this prop
+          onSave={handleUpdateTask}
+          onDelete={handleDeleteTask}
         />
       )}
     </div>
