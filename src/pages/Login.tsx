@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, Mail } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, emailConfirmationPending, pendingEmail } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,15 +39,17 @@ const Login = () => {
       });
       navigate("/dashboard");
     } catch (error) {
-      toast({
-        title: "Erro ao fazer login",
-        description: "Verifique suas credenciais e tente novamente",
-        variant: "destructive",
-      });
+      // Toast is already shown in the login function
+      console.error("Login error in component:", error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Pre-fill email if coming from registration with pending confirmation
+  if (pendingEmail && email === "") {
+    setEmail(pendingEmail);
+  }
 
   return (
     <AuthCard 
@@ -65,6 +69,17 @@ const Login = () => {
         </div>
       }
     >
+      {emailConfirmationPending && (
+        <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+          <Mail className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">Confirmação de email pendente</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            Por favor, verifique seu email e clique no link de confirmação para ativar sua conta.
+            {pendingEmail && ` Enviamos um email para ${pendingEmail}.`}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">E-mail</Label>

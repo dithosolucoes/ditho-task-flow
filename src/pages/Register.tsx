@@ -42,17 +42,10 @@ const Register = () => {
     try {
       setIsLoading(true);
       await register(name, email, password);
-      toast({
-        title: "Conta criada com sucesso",
-        description: "Bem-vindo ao Ditho Task",
-      });
-      navigate("/dashboard");
+      // Registration success notifications are handled in the register function
     } catch (error) {
-      toast({
-        title: "Erro ao criar conta",
-        description: "Tente novamente mais tarde",
-        variant: "destructive",
-      });
+      // Error toast is already shown in the register function
+      console.error("Register error in component:", error);
     } finally {
       setIsLoading(false);
     }

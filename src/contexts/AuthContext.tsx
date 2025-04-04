@@ -13,6 +13,8 @@ type AuthContextType = {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+  emailConfirmationPending: boolean;
+  pendingEmail: string | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +23,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [emailConfirmationPending, setEmailConfirmationPending] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,6 +53,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession?.user?.id);
+        
+        // Handle specific auth events
+        if (event === 'SIGNED_IN' && currentSession) {
+          setEmailConfirmationPending(false);
+          setPendingEmail(null);
+        }
+        
         if (currentSession) {
           setSession(currentSession);
           setUser(currentSession.user);
@@ -74,6 +85,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
+        // Handle specific error for email not confirmed
+        if (error.message === "Email not confirmed") {
+          setEmailConfirmationPending(true);
+          setPendingEmail(email);
+          throw new Error("Email não confirmado. Por favor, verifique sua caixa de entrada para o link de confirmação.");
+        }
         throw error;
       }
 
@@ -117,12 +134,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       console.log("Registration successful, user:", data.user?.id);
       
-      toast({
-        title: "Conta criada com sucesso",
-        description: "Você está agora autenticado no sistema.",
-      });
-      
-      navigate("/dashboard");
+      // Check if email confirmation is needed
+      if (data?.user && !data.session) {
+        setEmailConfirmationPending(true);
+        setPendingEmail(email);
+        
+        toast({
+          title: "Quase lá!",
+          description: "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e clique no link para ativar sua conta.",
+        });
+        
+        navigate("/login");
+      } else {
+        toast({
+          title: "Conta criada com sucesso",
+          description: "Você está agora autenticado no sistema.",
+        });
+        
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       console.error("Registration error:", error);
       toast({
@@ -148,6 +178,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Clear user and session state
       setUser(null);
       setSession(null);
+      setEmailConfirmationPending(false);
+      setPendingEmail(null);
       
       toast({
         title: "Logout realizado com sucesso",
@@ -187,7 +219,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
-        loading
+        loading,
+        emailConfirmationPending,
+        pendingEmail
       }}
     >
       {children}
