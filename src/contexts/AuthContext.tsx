@@ -26,22 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     console.log("Setting up auth state listener");
     
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession?.user?.id);
-        if (currentSession) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-        } else {
-          setSession(null);
-          setUser(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
+    // Get initial session first
     const getInitialSession = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -59,6 +44,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     getInitialSession();
+    
+    // Then set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log("Auth state changed:", event, currentSession?.user?.id);
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        } else {
+          setSession(null);
+          setUser(null);
+        }
+      }
+    );
 
     return () => {
       console.log("Cleaning up auth subscription");
@@ -146,6 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
+      // Clear user and session state
       setUser(null);
       setSession(null);
       
@@ -166,6 +166,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     }
   };
+
+  // Only render children when auth state is determined
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-ditho-beige">
+        <div className="animate-pulse text-center">
+          <p className="text-lg text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
