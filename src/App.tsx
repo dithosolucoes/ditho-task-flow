@@ -13,7 +13,7 @@ import Tasks from "./pages/Tasks";
 import Today from "./pages/Today";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/auth";
 
 // Create a client
 const queryClient = new QueryClient({
