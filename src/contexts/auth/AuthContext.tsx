@@ -33,11 +33,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  const handleRegister = async (name: string, email: string, password: string) => {
+  const handleRegister = async (name: string, email: string, password: string, role: 'user' | 'admin' = 'user') => {
     return register(
       name, 
       email, 
-      password, 
+      password,
+      role, 
       setLoading, 
       setEmailConfirmationPending, 
       setPendingEmail, 

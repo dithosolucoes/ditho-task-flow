@@ -30,12 +30,26 @@ export const login = async (
 
     console.log("Login successful, user:", data.user?.id);
     
-    toast({
-      title: "Login realizado com sucesso",
-      description: "Bem-vindo de volta!",
-    });
-    
-    navigate("/dashboard");
+    // Verificar se o usuário é admin e redirecionar adequadamente
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user?.id)
+      .single();
+      
+    if (profileData?.role === 'admin') {
+      toast({
+        title: "Login de administrador realizado",
+        description: "Bem-vindo ao painel administrativo!",
+      });
+      navigate("/admin");
+    } else {
+      toast({
+        title: "Login realizado com sucesso",
+        description: "Bem-vindo de volta!",
+      });
+      navigate("/dashboard");
+    }
   } catch (error: any) {
     console.error("Login error:", error);
     toast({
@@ -53,6 +67,7 @@ export const register = async (
   name: string, 
   email: string, 
   password: string,
+  role: 'user' | 'admin' = 'user',
   setLoading: (loading: boolean) => void,
   setEmailConfirmationPending: (pending: boolean) => void,
   setPendingEmail: (email: string | null) => void,
@@ -66,6 +81,7 @@ export const register = async (
       options: {
         data: {
           name,
+          role, // Incluindo o papel do usuário nos metadados
         },
       },
     });
@@ -88,12 +104,22 @@ export const register = async (
       
       navigate("/login");
     } else {
-      toast({
-        title: "Conta criada com sucesso",
-        description: "Você está agora autenticado no sistema.",
-      });
-      
-      navigate("/dashboard");
+      // Se o usuário for admin, redirecionar para o painel admin
+      if (role === 'admin') {
+        toast({
+          title: "Conta de administrador criada",
+          description: "Você foi registrado como administrador do sistema.",
+        });
+        
+        navigate("/admin");
+      } else {
+        toast({
+          title: "Conta criada com sucesso",
+          description: "Você está agora autenticado no sistema.",
+        });
+        
+        navigate("/dashboard");
+      }
     }
   } catch (error: any) {
     console.error("Registration error:", error);

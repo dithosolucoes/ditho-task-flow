@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState("user");
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -41,10 +43,8 @@ const Register = () => {
     
     try {
       setIsLoading(true);
-      await register(name, email, password);
-      // Registration success notifications are handled in the register function
+      await register(name, email, password, role as 'user' | 'admin');
     } catch (error) {
-      // Error toast is already shown in the register function
       console.error("Register error in component:", error);
     } finally {
       setIsLoading(false);
@@ -112,6 +112,23 @@ const Register = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
+        </div>
+        <div className="space-y-2">
+          <Label>Tipo de conta</Label>
+          <RadioGroup 
+            value={role} 
+            onValueChange={setRole} 
+            className="flex space-x-6 pt-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="user" id="user" />
+              <Label htmlFor="user" className="cursor-pointer">Cliente</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="admin" id="admin" />
+              <Label htmlFor="admin" className="cursor-pointer">Admin</Label>
+            </div>
+          </RadioGroup>
         </div>
         <Button 
           type="submit" 
