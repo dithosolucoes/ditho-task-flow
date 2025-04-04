@@ -13,6 +13,9 @@ import Tasks from "./pages/Tasks";
 import Today from "./pages/Today";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
+import AdminUsers from "./pages/AdminUsers";
+import AdminTasks from "./pages/AdminTasks";
 import { AuthProvider } from "./contexts/auth";
 
 // Create a client
@@ -40,6 +43,9 @@ const App = () => {
               <Route path="/today" element={<Today />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
+              <Route path="/admin/tasks" element={<AdminTasks />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

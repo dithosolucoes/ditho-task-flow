@@ -3,44 +3,56 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { CalendarDays, CheckSquare, Home, LayoutDashboard, ListTodo, Settings, X } from "lucide-react";
+import { CalendarDays, CheckSquare, Home, LayoutDashboard, ListTodo, Settings, X, Shield } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
+import { useAdminUsers } from "@/hooks/admin";
 
 type SidebarProps = {
   open: boolean;
   onClose: () => void;
 };
 
-const navItems = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Tarefas",
-    href: "/tasks",
-    icon: ListTodo,
-  },
-  {
-    title: "Hoje",
-    href: "/today",
-    icon: CheckSquare,
-  },
-  {
-    title: "Agenda",
-    href: "/calendar",
-    icon: CalendarDays,
-  },
-  {
-    title: "Configurações",
-    href: "/settings",
-    icon: Settings,
-  },
-];
-
 export function Sidebar({ open, onClose }: SidebarProps) {
   const location = useLocation();
+  const { useIsAdminQuery } = useAdminUsers();
+  const { data: isAdmin } = useIsAdminQuery();
+  
+  const navItems = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Tarefas",
+      href: "/tasks",
+      icon: ListTodo,
+    },
+    {
+      title: "Hoje",
+      href: "/today",
+      icon: CheckSquare,
+    },
+    {
+      title: "Agenda",
+      href: "/calendar",
+      icon: CalendarDays,
+    },
+    {
+      title: "Configurações",
+      href: "/settings",
+      icon: Settings,
+    },
+  ];
+
+  // Adiciona o item do menu de administração apenas se o usuário for admin
+  if (isAdmin) {
+    navItems.push({
+      title: "Administração",
+      href: "/admin",
+      icon: Shield,
+    });
+  }
   
   return (
     <>

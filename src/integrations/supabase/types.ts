@@ -16,6 +16,7 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
@@ -24,6 +25,7 @@ export type Database = {
           email?: string | null
           id: string
           name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Relationships: []
@@ -80,11 +83,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       task_category: "new" | "pending" | "scheduled"
       task_priority: "low" | "medium" | "high"
+      user_role: "user" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
