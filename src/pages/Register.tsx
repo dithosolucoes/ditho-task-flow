@@ -43,6 +43,7 @@ const Register = () => {
     
     try {
       setIsLoading(true);
+      // Pass role as a valid 'user' | 'admin' type to the register function
       await register(name, email, password, role as 'user' | 'admin');
     } catch (error) {
       console.error("Register error in component:", error);

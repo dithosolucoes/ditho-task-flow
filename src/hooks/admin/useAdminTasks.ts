@@ -10,13 +10,10 @@ export function useAdminTasks() {
 
   // Função para buscar todas as tarefas de todos os usuários
   const fetchAllTasks = async (): Promise<AdminTask[]> => {
-    // First attempt the join with proper relation name
+    // First fetch all tasks
     const { data: tasks, error } = await supabase
       .from("tasks")
-      .select(`
-        *,
-        profiles(name, email)
-      `)
+      .select('*')
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -24,20 +21,34 @@ export function useAdminTasks() {
       throw new Error(error.message);
     }
 
-    return tasks.map((task) => ({
-      id: task.id,
-      title: task.title,
-      description: task.description || undefined,
-      completed: task.completed,
-      dueDate: task.due_date ? new Date(task.due_date) : undefined,
-      priority: task.priority,
-      category: task.category || undefined,
-      createdAt: new Date(task.created_at),
-      user_id: task.user_id,
-      userName: task.profiles?.name || 
-               task.profiles?.email?.split('@')[0] || 
-               'Usuário'
-    }));
+    // For each task, fetch the user profile separately
+    const tasksWithUsers = await Promise.all(
+      tasks.map(async (task) => {
+        // Get the user profile for this task
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("name, email")
+          .eq("id", task.user_id)
+          .single();
+
+        return {
+          id: task.id,
+          title: task.title,
+          description: task.description || undefined,
+          completed: task.completed,
+          dueDate: task.due_date ? new Date(task.due_date) : undefined,
+          priority: task.priority,
+          category: task.category || undefined,
+          createdAt: new Date(task.created_at),
+          user_id: task.user_id,
+          userName: profile?.name || 
+                   profile?.email?.split('@')[0] || 
+                   'Usuário'
+        };
+      })
+    );
+
+    return tasksWithUsers;
   };
 
   // Hook para buscar todas as tarefas
