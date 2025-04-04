@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,14 +10,12 @@ export function useAdminTasks() {
 
   // Função para buscar todas as tarefas de todos os usuários
   const fetchAllTasks = async (): Promise<AdminTask[]> => {
+    // First attempt the join with proper relation name
     const { data: tasks, error } = await supabase
       .from("tasks")
       .select(`
         *,
-        profiles:user_id (
-          name,
-          email
-        )
+        profiles(name, email)
       `)
       .order("created_at", { ascending: false });
 
@@ -37,7 +34,9 @@ export function useAdminTasks() {
       category: task.category || undefined,
       createdAt: new Date(task.created_at),
       user_id: task.user_id,
-      userName: task.profiles?.name || task.profiles?.email?.split('@')[0] || 'Usuário'
+      userName: task.profiles?.name || 
+               task.profiles?.email?.split('@')[0] || 
+               'Usuário'
     }));
   };
 
