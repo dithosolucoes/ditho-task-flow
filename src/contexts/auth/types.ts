@@ -6,7 +6,7 @@ export type AuthContextType = {
   session: Session | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role?: 'user' | 'admin') => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
   emailConfirmationPending: boolean;
